@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/galaxy_model.dart';
@@ -24,18 +26,70 @@ class GalaxyBoardScreen extends StatefulWidget {
 }
 
 class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late AnimationController _animationController;
+  QuestModel? _selectedQuest;
+
+  // Session-persistent daily quests state
+  static List<QuestModel>? _sessionDailyQuests;
+  static int _completedDailyCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    // Continuous slow planetary rotation loop (repeats infinitely)
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 40),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  // Initialize and refresh daily quests list
+  void _initializeSessionDailyQuests(GameProgression progression) {
+    if (_sessionDailyQuests == null) {
+      _sessionDailyQuests = [];
+      for (int i = 0; i < 3; i++) {
+        _sessionDailyQuests!.add(_generateUniqueDailyQuest(progression));
+      }
+    } else {
+      // Clean completed procedural daily quests
+      final completedIds = progression.completedQuestIds;
+      final beforeCount = _sessionDailyQuests!.length;
+      _sessionDailyQuests!.removeWhere((q) => completedIds.contains(q.id));
+      final completedDelta = beforeCount - _sessionDailyQuests!.length;
+      _completedDailyCount += completedDelta;
+
+      // Spawning new daily sectors up to a maximum limit of 10 completions per session
+      if (_completedDailyCount < 10) {
+        final int maxToGenerate = 3 - _sessionDailyQuests!.length;
+        for (int i = 0; i < maxToGenerate; i++) {
+          if (_completedDailyCount + _sessionDailyQuests!.length < 10) {
+            _sessionDailyQuests!.add(_generateUniqueDailyQuest(progression));
+          }
+        }
+      }
+    }
+  }
+
+  QuestModel _generateUniqueDailyQuest(GameProgression progression) {
+    final dailyLevel = SectorGenerator.generateDailySector(progression);
+    // Generate a secure unique daily quest ID
+    final uniqueId = "daily_quest_${dailyLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
+    return QuestModel(
+      id: uniqueId,
+      title: dailyLevel.name,
+      description: dailyLevel.description,
+      type: QuestType.daily,
+      storyLoreSnippet: "A highly volatile stellar surge is warping sector coordinates. Calibrate superlasers to neutralize threat.",
+      creditsReward: dailyLevel.creditsReward,
+      rpReward: dailyLevel.researchPointsReward,
+      levelData: dailyLevel,
+    );
   }
 
   @override
@@ -48,16 +102,34 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
         listenable: widget.controller,
         builder: (context, _) {
           final progression = widget.controller.progression;
-          // Filter quests by type
+
+          // 1. Enforce specific quest selection constraints
+          // Lore quests: Max 1 active (incomplete) Lore quest
           final loreQuests = galaxy.quests.where((q) => q.type == QuestType.lore).toList();
-          final sideQuests = galaxy.quests.where((q) => q.type == QuestType.side).toList();
+          QuestModel? activeLoreQuest;
+          for (var q in loreQuests) {
+            if (!progression.completedQuestIds.contains(q.id)) {
+              activeLoreQuest = q;
+              break;
+            }
+          }
+
+          // Side quests: Max 3 active (incomplete) Side quests
+          final sideQuests = galaxy.quests
+              .where((q) => q.type == QuestType.side && !progression.completedQuestIds.contains(q.id))
+              .take(3)
+              .toList();
+
+          // Daily quests: Max 3 active (incomplete) Daily quests (10 max total completions)
+          _initializeSessionDailyQuests(progression);
+          final dailyQuests = _sessionDailyQuests ?? const <QuestModel>[];
 
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: Column(
                 children: [
-                  // Unified Small Header
+                  // Galaxy Board Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -74,14 +146,14 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                               Text(
                                 galaxy.name.toUpperCase(),
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: Color(0xFFFFFFFF),
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 1.5,
                                 ),
                               ),
                               const Text(
-                                "SECTOR COMMAND CONSOLE",
+                                "SECTOR SOLAR MAP CONSOLE",
                                 style: TextStyle(
                                   color: Color(0xFF00FFF5),
                                   fontSize: 9,
@@ -93,7 +165,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                           ),
                         ],
                       ),
-                      // Currencies Status
+                      // Core Resources Chips
                       Row(
                         children: [
                           _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
@@ -103,54 +175,110 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-
-                  // Divider
+                  const SizedBox(height: 8),
                   Container(
                     height: 1,
-                    color: const Color(0xFF00ADB5).withOpacity(0.2),
+                    color: const Color(0xFF00ADB5).withOpacity(0.15),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
-                  // Cyberpunk TabBar
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: const Color(0xFF00FFF5),
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: const Color(0xFF00ADB5),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: const Color(0xFF00ADB5).withOpacity(0.15),
-                    tabs: const [
-                      Tab(
-                        icon: Icon(Icons.account_tree_outlined, size: 18),
-                        text: "LORE STORY",
-                      ),
-                      Tab(
-                        icon: Icon(Icons.assignment_outlined, size: 18),
-                        text: "SIDE MISSIONS",
-                      ),
-                      Tab(
-                        icon: Icon(Icons.wb_sunny_outlined, size: 18),
-                        text: "DAILY TARGETS",
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Tab Views
+                  // Solar System Map Area
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        // Tab 1: Story / Lore Nodes
-                        _buildStoryTimeline(context, loreQuests, progression),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final mapWidth = constraints.maxWidth;
+                        final mapHeight = constraints.maxHeight;
 
-                        // Tab 2: Side Quests Grid
-                        _buildSideQuestsPanel(context, sideQuests, progression),
+                        final center = Offset(mapWidth / 2.0, mapHeight * 0.42);
 
-                        // Tab 3: Daily Quest Port
-                        _buildDailyQuestPanel(context, progression),
-                      ],
+                        // Responsive elliptical orbit diameters
+                        final orbitXRadii = [mapWidth * 0.20, mapWidth * 0.35, mapWidth * 0.48];
+                        final orbitYRadii = [mapWidth * 0.15, mapWidth * 0.26, mapWidth * 0.36];
+
+                        // Spacers for Side and Daily planet distributions
+                        final sideAngles = [pi / 4, pi / 4 + (2 * pi / 3), pi / 4 + (4 * pi / 3)];
+                        final dailyAngles = [pi / 6, pi / 6 + (2 * pi / 3), pi / 6 + (4 * pi / 3)];
+
+                        return AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            final double animVal = _animationController.value;
+
+                            return Stack(
+                              children: [
+                                // 1. Custom Painted orbits & core command Hub
+                                Positioned.fill(
+                                  child: RepaintBoundary(
+                                    child: CustomPaint(
+                                      painter: _SolarSystemPainter(
+                                        center: center,
+                                        orbitXRadii: orbitXRadii,
+                                        orbitYRadii: orbitYRadii,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // 2. Interactive Orbiting Planet Nodes
+                                // A. Active Lore Quest Planet Node (Orbit 1, Inner)
+                                if (activeLoreQuest != null)
+                                  _buildOrbitingPlanet(
+                                    quest: activeLoreQuest,
+                                    center: center,
+                                    rx: orbitXRadii[0],
+                                    ry: orbitYRadii[0],
+                                    theta0: 0.0,
+                                    speedFactor: 1.8,
+                                    animProgress: animVal,
+                                    themeColor: const Color(0xFF00FFF5),
+                                    icon: Icons.explore,
+                                  ),
+
+                                // B. Active Side Quest Planet Nodes (Orbit 2, Middle)
+                                ...List.generate(sideQuests.length, (idx) {
+                                  final quest = sideQuests[idx];
+                                  return _buildOrbitingPlanet(
+                                    quest: quest,
+                                    center: center,
+                                    rx: orbitXRadii[1],
+                                    ry: orbitYRadii[1],
+                                    theta0: sideAngles[idx % 3],
+                                    speedFactor: 1.2,
+                                    animProgress: animVal,
+                                    themeColor: const Color(0xFFFF2E93),
+                                    icon: Icons.assignment,
+                                  );
+                                }),
+
+                                // C. Active Daily Quest Planet Nodes (Orbit 3, Outer)
+                                ...List.generate(dailyQuests.length, (idx) {
+                                  final quest = dailyQuests[idx];
+                                  return _buildOrbitingPlanet(
+                                    quest: quest,
+                                    center: center,
+                                    rx: orbitXRadii[2],
+                                    ry: orbitYRadii[2],
+                                    theta0: dailyAngles[idx % 3],
+                                    speedFactor: -0.7, // Rotate in opposite direction
+                                    animProgress: animVal,
+                                    themeColor: const Color(0xFFFFB703),
+                                    icon: Icons.track_changes,
+                                  );
+                                }),
+
+                                // 3. Glassmorphic Slide-Up Tactical Briefing Console Drawer (Absolute overlay)
+                                if (_selectedQuest != null)
+                                  Positioned(
+                                    left: 4,
+                                    right: 4,
+                                    bottom: 4,
+                                    child: _buildBriefingConsole(context, _selectedQuest!),
+                                  ),
+                              ],
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -162,389 +290,261 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     );
   }
 
-  Widget _buildStoryTimeline(BuildContext context, List<QuestModel> quests, GameProgression progression) {
-    if (quests.isEmpty) {
-      return const Center(
-        child: Text(
-          "NO STORYLINE SECURED IN THIS GALAXY",
-          style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
-        ),
-      );
-    }
+  Widget _buildOrbitingPlanet({
+    required QuestModel quest,
+    required Offset center,
+    required double rx,
+    required double ry,
+    required double theta0,
+    required double speedFactor,
+    required double animProgress,
+    required Color themeColor,
+    required IconData icon,
+  }) {
+    // Parametric calculations to find position on the responsive elliptical track
+    final double theta = theta0 + (animProgress * 2 * pi * speedFactor);
+    final double px = center.dx + rx * cos(theta);
+    final double py = center.dy + ry * sin(theta);
+    const double planetSize = 52.0;
 
-    return ListView.builder(
-      itemCount: quests.length,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemBuilder: (context, index) {
-        final quest = quests[index];
-        final isCompleted = progression.completedQuestIds.contains(quest.id);
-        
-        // Sequence check: Story level N requires level N-1 completed
-        bool isUnlocked = true;
-        if (index > 0) {
-          final prevQuest = quests[index - 1];
-          isUnlocked = progression.completedQuestIds.contains(prevQuest.id);
-        }
+    final isSelected = _selectedQuest?.id == quest.id;
 
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Chronological Node Indicator
-              Column(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: isCompleted
-                          ? Colors.greenAccent.withOpacity(0.08)
-                          : (isUnlocked ? const Color(0xFF0B0E14) : Colors.redAccent.withOpacity(0.04)),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isCompleted
-                            ? Colors.greenAccent
-                            : (isUnlocked ? const Color(0xFF00ADB5) : Colors.redAccent.withOpacity(0.3)),
-                        width: 2.0,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        isCompleted ? Icons.check : (isUnlocked ? Icons.play_arrow : Icons.lock),
-                        size: 14,
-                        color: isCompleted
-                            ? Colors.greenAccent
-                            : (isUnlocked ? const Color(0xFF00FFF5) : Colors.redAccent.withOpacity(0.4)),
-                      ),
-                    ),
-                  ),
-                  if (index < quests.length - 1)
-                    Container(
-                      width: 2,
-                      height: 50,
-                      color: isCompleted ? Colors.greenAccent.withOpacity(0.4) : const Color(0xFF393E46),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 16),
-
-              // Quest Node Card
-              Expanded(
-                child: GestureDetector(
-                  onTap: isUnlocked ? () => _showQuestDetailsDialog(context, quest, isCompleted) : null,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF161B22),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isCompleted
-                            ? Colors.greenAccent.withOpacity(0.3)
-                            : (isUnlocked ? const Color(0xFF00ADB5).withOpacity(0.2) : Colors.redAccent.withOpacity(0.1)),
-                        width: 1.2,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              quest.title.toUpperCase(),
-                              style: TextStyle(
-                                color: isUnlocked ? Colors.white : Colors.grey,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
-                              ),
-                            ),
-                            if (isCompleted)
-                              const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 14),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          quest.description,
-                          style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            _buildMiniRewardChip(Icons.monetization_on, "+${quest.creditsReward}", Colors.amberAccent),
-                            const SizedBox(width: 8),
-                            _buildMiniRewardChip(Icons.science, "+${quest.rpReward} RP", Colors.purpleAccent),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSideQuestsPanel(BuildContext context, List<QuestModel> quests, GameProgression progression) {
-    if (quests.isEmpty) {
-      return const Center(
-        child: Text(
-          "NO SIDE MISSIONS CURRENTLY LOGGED",
-          style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: quests.length,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemBuilder: (context, index) {
-        final quest = quests[index];
-        final isCompleted = progression.completedQuestIds.contains(quest.id);
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: GestureDetector(
-            onTap: () => _showQuestDetailsDialog(context, quest, isCompleted),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161B22),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isCompleted
-                      ? Colors.greenAccent.withOpacity(0.3)
-                      : const Color(0xFF00ADB5).withOpacity(0.2),
-                  width: 1.2,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        quest.title.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      if (isCompleted)
-                        const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 14),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    quest.description,
-                    style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildMiniRewardChip(Icons.monetization_on, "+${quest.creditsReward}", Colors.amberAccent),
-                      const SizedBox(width: 8),
-                      _buildMiniRewardChip(Icons.science, "+${quest.rpReward} RP", Colors.purpleAccent),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDailyQuestPanel(BuildContext context, GameProgression progression) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF00ADB5).withOpacity(0.2), width: 1.5),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.radar_sharp, color: Color(0xFF00FFF5), size: 48),
-          const SizedBox(height: 16),
-          const Text(
-            "DAILY SECTOR OUTPOST TERMINAL",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "A dynamically generated system cleared by space relays. Refreshes procedural puzzles adapted to your level.",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
-          ),
-          const SizedBox(height: 24),
-          
-          // Terminal Info Status
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0B0E14),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF00ADB5).withOpacity(0.1)),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Positioned(
+      left: px - planetSize / 2,
+      top: py - planetSize / 2,
+      width: planetSize,
+      height: planetSize + 22.0, // extra height for bottom planet label tag
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() {
+            if (isSelected) {
+              _selectedQuest = null; // Toggle dismiss
+            } else {
+              _selectedQuest = quest; // Select active briefing
+            }
+          });
+        },
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.center,
               children: [
-                Text(
-                  "STATUS: SECTOR DETECTED",
-                  style: TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                // Outer Pulsing Orbit Halo Ring
+                Container(
+                  width: planetSize,
+                  height: planetSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: themeColor.withOpacity(isSelected ? 0.35 : 0.12),
+                        blurRadius: isSelected ? 16 : 8,
+                        spreadRadius: isSelected ? 3 : 1,
+                      )
+                    ],
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFFFFFFFF) : themeColor.withOpacity(0.3),
+                      width: isSelected ? 1.5 : 1.0,
+                    ),
+                  ),
                 ),
-                Text(
-                  "EST. YIELD: +300 C / +50 RP",
-                  style: TextStyle(color: Colors.amberAccent, fontSize: 9, fontWeight: FontWeight.bold),
+
+                // Core Planet Body
+                Container(
+                  width: planetSize - 10.0,
+                  height: planetSize - 10.0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0B0E14).withOpacity(0.95),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: themeColor.withOpacity(0.8), width: 1.5),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: themeColor,
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 32),
-
-          // Launch Procedural Daily Quest
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                final dailyLevel = SectorGenerator.generateDailySector(progression);
-                final dailyQuest = QuestModel(
-                  id: "daily_quest_${DateTime.now().millisecondsSinceEpoch}",
-                  title: dailyLevel.name,
-                  description: dailyLevel.description,
-                  type: QuestType.daily,
-                  storyLoreSnippet: "A highly volatile cosmic wave is warping sector coordinates. Calibrate and redirect the superlaser.",
-                  creditsReward: dailyLevel.creditsReward,
-                  rpReward: dailyLevel.researchPointsReward,
-                  levelData: dailyLevel,
-                );
-                widget.onQuestSelected(dailyQuest);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00ADB5),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 4,
+            const SizedBox(height: 4),
+            // Floating responsive planet label
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B22).withOpacity(0.8),
+                borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                "LAUNCH PROCEDURAL SECTOR",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.0),
+              child: Text(
+                quest.title.toUpperCase(),
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFFFFFFFF) : Colors.grey,
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  void _showQuestDetailsDialog(BuildContext context, QuestModel quest, bool isCompleted) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF161B22),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF00ADB5), width: 1.5),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                quest.type == QuestType.side ? Icons.assignment : Icons.movie_outlined,
-                color: const Color(0xFF00FFF5),
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  quest.title.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 16, letterSpacing: 1.0, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+  Widget _buildBriefingConsole(BuildContext context, QuestModel quest) {
+    String typeLabel = "STORY MISSION";
+    Color typeColor = const Color(0xFF00FFF5);
+    if (quest.type == QuestType.side) {
+      typeLabel = "TACTICAL DRILL";
+      typeColor = const Color(0xFFFF2E93);
+    } else if (quest.type == QuestType.daily) {
+      typeLabel = "DAILY RELAYS SECTOR";
+      typeColor = const Color(0xFFFFB703);
+    }
+
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161B22).withOpacity(0.88),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: typeColor.withOpacity(0.7), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: typeColor.withOpacity(0.12),
+              blurRadius: 20,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Slide briefing header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Story snippet
-                if (quest.storyLoreSnippet != null) ...[
-                  const Text(
-                    "TACTICAL COMMAND INCOMING BRIEFING:",
-                    style: TextStyle(color: Color(0xFF00FFF5), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "\"${quest.storyLoreSnippet}\"",
-                    style: const TextStyle(color: Colors.tealAccent, fontSize: 11, fontStyle: FontStyle.italic, height: 1.4),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                const Text(
-                  "SECTOR TASK DETAILS:",
-                  style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      typeLabel,
+                      style: TextStyle(
+                        color: typeColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      quest.title.toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFFFFFFFF),
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  quest.description,
-                  style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                  onPressed: () {
+                    setState(() {
+                      _selectedQuest = null;
+                    });
+                  },
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  "CLEARANCE REWARDS:",
-                  style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Briefing Lore Snippet
+            if (quest.storyLoreSnippet != null) ...[
+              Text(
+                "\"${quest.storyLoreSnippet}\"",
+                style: TextStyle(
+                  color: typeColor.withOpacity(0.8),
+                  fontSize: 10.5,
+                  fontStyle: FontStyle.italic,
+                  height: 1.35,
                 ),
-                const SizedBox(height: 6),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // Quest Mission Objective Description
+            const Text(
+              "DIRECTIVE OBJECTIVE:",
+              style: TextStyle(color: Colors.grey, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              quest.description,
+              style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 11.5, height: 1.4),
+            ),
+            const SizedBox(height: 10),
+
+            // Rewards Chips Row & Daily Limit
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Row(
                   children: [
-                    _buildMiniRewardChip(Icons.monetization_on, "+${quest.creditsReward} C", Colors.amberAccent),
-                    const SizedBox(width: 10),
+                    _buildMiniRewardChip(Icons.monetization_on, "+${quest.creditsReward}", Colors.amberAccent),
+                    const SizedBox(width: 8),
                     _buildMiniRewardChip(Icons.science, "+${quest.rpReward} RP", Colors.purpleAccent),
                   ],
                 ),
+                if (quest.type == QuestType.daily)
+                  Text(
+                    "RELAY PROGRESS: $_completedDailyCount/10 DONE",
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("CANCEL", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                widget.onQuestSelected(quest);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00ADB5),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            const SizedBox(height: 14),
+
+            // Deployment Button
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  final q = _selectedQuest;
+                  setState(() {
+                    _selectedQuest = null; // reset selected drawer state
+                  });
+                  if (q != null) {
+                    widget.onQuestSelected(q);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: typeColor,
+                  foregroundColor: const Color(0xFF0B0E14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 4,
+                ),
+                child: const Text(
+                  "DEPLOY COMMAND DECK",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0),
+                ),
               ),
-              child: const Text("DEPLOY DECK", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -552,7 +552,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF0B0E14),
+        color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
@@ -590,5 +590,92 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
         ],
       ),
     );
+  }
+}
+
+// ------------------------------------------------------------------
+// Solar System Vector Ellipse Painter
+// ------------------------------------------------------------------
+
+class _SolarSystemPainter extends CustomPainter {
+  final Offset center;
+  final List<double> orbitXRadii;
+  final List<double> orbitYRadii;
+
+  _SolarSystemPainter({
+    required this.center,
+    required this.orbitXRadii,
+    required this.orbitYRadii,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Draw concentric dashed vector orbits
+    final orbitPaint = Paint()
+      ..color = const Color(0xFF132238).withOpacity(0.35)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < orbitXRadii.length; i++) {
+      final rx = orbitXRadii[i];
+      final ry = orbitYRadii[i];
+      final path = Path();
+      
+      path.addOval(Rect.fromCenter(center: center, width: rx * 2, height: ry * 2));
+      _drawDashedPath(canvas, path, orbitPaint);
+    }
+
+    // 2. Draw glowing central Galaxy Command Core Star (Sun)
+    const double sunRadius = 38.0;
+    
+    // Core radial solar glow
+    final sunGlowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFF00FFF5).withOpacity(0.35),
+          const Color(0xFFFF2E93).withOpacity(0.08),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: sunRadius * 2.0));
+    canvas.drawCircle(center, sunRadius * 2.0, sunGlowPaint);
+
+    final sunCorePaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFFFFFFF),
+          const Color(0xFF00ADB5),
+          const Color(0xFF0B0E14),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: sunRadius));
+    canvas.drawCircle(center, sunRadius, sunCorePaint);
+    
+    // Core command hub tech border ring
+    final sunBorderPaint = Paint()
+      ..color = const Color(0xFF00FFF5).withOpacity(0.80)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(center, sunRadius, sunBorderPaint);
+  }
+
+  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
+    const dashWidth = 5.0;
+    const dashSpace = 5.0;
+
+    final PathMetrics pathMetrics = path.computeMetrics();
+    for (PathMetric metric in pathMetrics) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double length = min(dashWidth, metric.length - distance);
+        final Path extract = metric.extractPath(distance, distance + length);
+        canvas.drawPath(extract, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SolarSystemPainter oldDelegate) {
+    return oldDelegate.center != center ||
+        oldDelegate.orbitXRadii.length != orbitXRadii.length;
   }
 }

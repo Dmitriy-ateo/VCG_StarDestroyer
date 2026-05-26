@@ -161,6 +161,8 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                   final center = centers[index];
                                   final isUnlocked = galaxy.checkUnlockStatus(progression);
                                   final isCompleted = progression.completedGalaxyIds.contains(galaxy.id);
+                                  final activeLoreGalaxyId = _getActiveLoreGalaxyId(progression);
+                                  final isTargetLoreGalaxy = activeLoreGalaxyId == galaxy.id;
                                   
                                   return Positioned(
                                     left: center.dx - nodeSize / 2,
@@ -203,6 +205,14 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
 
                                           // Central Status Center Icon Badge
                                           _buildCenterIconBadge(isUnlocked, isCompleted),
+
+                                          // Active Lore Guidance Indicator Badge
+                                          if (isTargetLoreGalaxy && isUnlocked)
+                                            Positioned(
+                                              top: nodeSize * 0.08,
+                                              right: nodeSize * 0.08,
+                                              child: _buildLoreGuidanceBadge(),
+                                            ),
 
                                           // Floating Galaxy Tag Banner (Underneath Node)
                                           Positioned(
@@ -283,6 +293,41 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
       default:
         return _CoreOutpostPainter(isUnlocked: isUnlocked);
     }
+  }
+
+  String? _getActiveLoreGalaxyId(GameProgression progression) {
+    for (var galaxy in preloadedGalaxies) {
+      for (var quest in galaxy.quests) {
+        if (quest.type == QuestType.lore && !progression.completedQuestIds.contains(quest.id)) {
+          return galaxy.id;
+        }
+      }
+    }
+    return null;
+  }
+
+  Widget _buildLoreGuidanceBadge() {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B0E14).withOpacity(0.9),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF00FFF5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00FFF5).withOpacity(0.4),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.explore,
+        color: Color(0xFF00FFF5),
+        size: 13,
+      ),
+    );
   }
 
   Widget _buildCenterIconBadge(bool isUnlocked, bool isCompleted) {
