@@ -49,4 +49,16 @@ class DeviceModel {
     );
   }
 
+  factory DeviceModel.fromJson(Map<String, dynamic> json) {
+    return DeviceModel(
+      id: json['id'] as String,
+      type: DeviceType.values.firstWhere((e) => e.name == json['type']),
+      gridX: json['gridX'] as int? ?? 0,
+      gridY: json['gridY'] as int? ?? 0,
+      angleDegrees: (json['angleDegrees'] as num? ?? 0.0).toDouble(),
+      portalPairId: json['portalPairId'] as String?,
+      splitAngleDegrees: (json['splitAngleDegrees'] as num?)?.toDouble(),
+      isPlaced: json['isPlaced'] as bool? ?? false,
+    );
+  }
 }
