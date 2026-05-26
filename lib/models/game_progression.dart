@@ -6,7 +6,7 @@ class GameProgression {
   Set<int> completedLevelIds;
   Set<DeviceType> unlockedDevices;
   Set<double> unlockedSplitterAngles; // Tracks unlocked splitter angle variants
-  Map<DeviceType, int> purchasedMarketDevices; // Tracks purchased extra items
+  Map<String, int> purchasedMarketDevices; // Tracks purchased extra items
   
   // Upgrades
   int laserIntensityLevel; // 1 to 5
@@ -19,7 +19,7 @@ class GameProgression {
     Set<int>? completedLevelIds,
     Set<DeviceType>? unlockedDevices,
     Set<double>? unlockedSplitterAngles,
-    Map<DeviceType, int>? purchasedMarketDevices,
+    Map<String, int>? purchasedMarketDevices,
     this.laserIntensityLevel = 1,
     this.aimingComputerLevel = 1, // Start with aiming preview enabled level 1
     this.chassisCapacityLevel = 1,
@@ -27,11 +27,14 @@ class GameProgression {
         unlockedDevices = unlockedDevices ?? {DeviceType.reflector},
         unlockedSplitterAngles = unlockedSplitterAngles ?? {180.0},
         purchasedMarketDevices = purchasedMarketDevices ?? {
-          DeviceType.reflector: 0,
-          DeviceType.splitter: 0,
-          DeviceType.bomb: 0,
-          DeviceType.gravityWell: 0,
-          DeviceType.portal: 0,
+          'reflector': 0,
+          'bomb': 0,
+          'gravityWell': 0,
+          'portal': 0,
+          'splitter_180': 0,
+          'splitter_90': 0,
+          'splitter_135': 0,
+          'splitter_45': 0,
         };
 
   // Clone progression
@@ -49,18 +52,21 @@ class GameProgression {
     );
   }
 
-  static int getDeviceMarketPrice(DeviceType type) {
-    switch (type) {
-      case DeviceType.reflector:
+  static int getMarketItemPrice(String itemId) {
+    if (itemId.startsWith('splitter_')) {
+      return 200; // Standard price for all splitters
+    }
+    switch (itemId) {
+      case 'reflector':
         return 150;
-      case DeviceType.splitter:
-        return 200;
-      case DeviceType.bomb:
+      case 'bomb':
         return 250;
-      case DeviceType.gravityWell:
+      case 'gravityWell':
         return 300;
-      case DeviceType.portal:
+      case 'portal':
         return 400;
+      default:
+        return 9999;
     }
   }
 

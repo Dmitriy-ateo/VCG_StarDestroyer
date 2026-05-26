@@ -23,47 +23,79 @@ class MarketScreen extends StatelessWidget {
         builder: (context, _) {
           final progression = controller.progression;
 
-          // List of purchaseable items
+          // List of purchaseable items dynamically constructed from researched state
           final items = [
             _MarketItemData(
-              type: DeviceType.reflector,
+              itemId: "reflector",
               name: "Deflector Prism Mirror",
               description: "Directs incoming lasers using vector angles. Pure reflective glass.",
-              price: GameProgression.getDeviceMarketPrice(DeviceType.reflector),
+              price: GameProgression.getMarketItemPrice("reflector"),
               icon: Icons.flip,
               glowColor: const Color(0xFF00FFF5),
+              isResearched: progression.unlockedDevices.contains(DeviceType.reflector),
             ),
             _MarketItemData(
-              type: DeviceType.splitter,
+              itemId: "splitter_180",
               name: "Prism Laser Splitter (180°)",
               description: "Splits a single beam into two directly opposite rays.",
-              price: GameProgression.getDeviceMarketPrice(DeviceType.splitter),
+              price: GameProgression.getMarketItemPrice("splitter_180"),
               icon: Icons.call_split,
               glowColor: const Color(0xFFFF2E93),
+              isResearched: progression.unlockedSplitterAngles.contains(180.0),
             ),
             _MarketItemData(
-              type: DeviceType.bomb,
+              itemId: "splitter_90",
+              name: "Prism Laser Splitter (90°)",
+              description: "Splits a single beam into two rays separated by a 90° angle.",
+              price: GameProgression.getMarketItemPrice("splitter_90"),
+              icon: Icons.call_split,
+              glowColor: const Color(0xFFFF2E93),
+              isResearched: progression.unlockedSplitterAngles.contains(90.0),
+            ),
+            _MarketItemData(
+              itemId: "splitter_135",
+              name: "Prism Laser Splitter (135°)",
+              description: "Splits a single beam into two rays separated by a 135° angle.",
+              price: GameProgression.getMarketItemPrice("splitter_135"),
+              icon: Icons.call_split,
+              glowColor: const Color(0xFFFF2E93),
+              isResearched: progression.unlockedSplitterAngles.contains(135.0),
+            ),
+            _MarketItemData(
+              itemId: "splitter_45",
+              name: "Prism Laser Splitter (45°)",
+              description: "Splits a single beam into two rays separated by a 45° angle.",
+              price: GameProgression.getMarketItemPrice("splitter_45"),
+              icon: Icons.call_split,
+              glowColor: const Color(0xFFFF2E93),
+              isResearched: progression.unlockedSplitterAngles.contains(45.0),
+            ),
+            _MarketItemData(
+              itemId: "bomb",
               name: "Anti-Matter Trigger Bomb",
               description: "Proximity explosives reacting violently with high-charge lasers.",
-              price: GameProgression.getDeviceMarketPrice(DeviceType.bomb),
+              price: GameProgression.getMarketItemPrice("bomb"),
               icon: Icons.brightness_low,
               glowColor: const Color(0xFFFF3333),
+              isResearched: progression.unlockedDevices.contains(DeviceType.bomb),
             ),
             _MarketItemData(
-              type: DeviceType.gravityWell,
+              itemId: "gravityWell",
               name: "Singularity Gravity Well",
               description: "Generates microscopic black holes that bend laser rays dynamically.",
-              price: GameProgression.getDeviceMarketPrice(DeviceType.gravityWell),
+              price: GameProgression.getMarketItemPrice("gravityWell"),
               icon: Icons.blur_circular,
               glowColor: const Color(0xFF7B2CBF),
+              isResearched: progression.unlockedDevices.contains(DeviceType.gravityWell),
             ),
             _MarketItemData(
-              type: DeviceType.portal,
+              itemId: "portal",
               name: "Cosmic Warp Portals (Pair)",
               description: "Einstein-Rosen bridges linking spatial grid indexes for ray transit.",
-              price: GameProgression.getDeviceMarketPrice(DeviceType.portal),
+              price: GameProgression.getMarketItemPrice("portal"),
               icon: Icons.circle_outlined,
               glowColor: const Color(0xFFFF9F1C),
+              isResearched: progression.unlockedDevices.contains(DeviceType.portal),
             ),
           ];
 
@@ -130,10 +162,9 @@ class MarketScreen extends StatelessWidget {
                       itemCount: items.length,
                       itemBuilder: (context, index) {
                         final item = items[index];
-                        final isResearched = progression.unlockedDevices.contains(item.type);
-                        final ownedCount = progression.purchasedMarketDevices[item.type] ?? 0;
+                        final isLocked = !item.isResearched;
+                        final ownedCount = progression.purchasedMarketDevices[item.itemId] ?? 0;
                         final canAfford = progression.credits >= item.price;
-                        final isLocked = !isResearched;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -251,7 +282,7 @@ class MarketScreen extends StatelessWidget {
                                     ElevatedButton(
                                       onPressed: canAfford
                                           ? () {
-                                              controller.buyMarketDevice(item.type);
+                                              controller.buyMarketDevice(item.itemId);
                                               HapticFeedback.mediumImpact();
                                               ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
@@ -350,19 +381,21 @@ class MarketScreen extends StatelessWidget {
 }
 
 class _MarketItemData {
-  final DeviceType type;
+  final String itemId;
   final String name;
   final String description;
   final int price;
   final IconData icon;
   final Color glowColor;
+  final bool isResearched;
 
   const _MarketItemData({
-    required this.type,
+    required this.itemId,
     required this.name,
     required this.description,
     required this.price,
     required this.icon,
     required this.glowColor,
+    required this.isResearched,
   });
 }

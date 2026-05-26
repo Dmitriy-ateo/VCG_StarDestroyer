@@ -105,42 +105,43 @@ class GameController extends ChangeNotifier {
     }
 
     // Append market-purchased devices to the inventory pool
-    progression.purchasedMarketDevices.forEach((type, count) {
+    progression.purchasedMarketDevices.forEach((itemId, count) {
       if (count <= 0) return;
       
-      // Portals are bought/sold in pairs!
-      if (type == DeviceType.portal) {
+      if (itemId == 'portal') {
         for (int i = 0; i < count; i++) {
-          final devId = "market_${type.name}_${idCounter++}";
-          final pairIdString = "market_${type.name}_${idCounter++}";
+          final devId = "market_portal_${idCounter++}";
+          final pairIdString = "market_portal_${idCounter++}";
           
           inventory.add(DeviceModel(
             id: devId,
-            type: type,
+            type: DeviceType.portal,
             portalPairId: pairIdString,
             isPlaced: false,
           ));
           inventory.add(DeviceModel(
             id: pairIdString,
-            type: type,
+            type: DeviceType.portal,
             portalPairId: devId,
             isPlaced: false,
           ));
         }
-      } else if (type == DeviceType.splitter) {
-        // Splitters in market are 180 degree by default
+      } else if (itemId.startsWith('splitter_')) {
+        final angleStr = itemId.split('_')[1];
+        final angle = double.tryParse(angleStr) ?? 180.0;
         for (int i = 0; i < count; i++) {
           inventory.add(DeviceModel(
-            id: "market_${type.name}_${idCounter++}",
-            type: type,
-            splitAngleDegrees: 180.0,
+            id: "market_${itemId}_${idCounter++}",
+            type: DeviceType.splitter,
+            splitAngleDegrees: angle,
             isPlaced: false,
           ));
         }
       } else {
+        final type = DeviceType.values.firstWhere((e) => e.name == itemId, orElse: () => DeviceType.reflector);
         for (int i = 0; i < count; i++) {
           inventory.add(DeviceModel(
-            id: "market_${type.name}_${idCounter++}",
+            id: "market_${itemId}_${idCounter++}",
             type: type,
             isPlaced: false,
           ));
@@ -348,13 +349,24 @@ class GameController extends ChangeNotifier {
     return false;
   }
 
-  bool buyMarketDevice(DeviceType type) {
-    if (!progression.unlockedDevices.contains(type)) return false;
+  bool buyMarketDevice(String itemId) {
+    // Check if the item is unlocked/researched
+    bool isUnlocked = false;
+    if (itemId.startsWith('splitter_')) {
+      final angleStr = itemId.split('_')[1];
+      final angle = double.tryParse(angleStr) ?? 180.0;
+      isUnlocked = progression.unlockedSplitterAngles.contains(angle);
+    } else {
+      final type = DeviceType.values.firstWhere((e) => e.name == itemId, orElse: () => DeviceType.reflector);
+      isUnlocked = progression.unlockedDevices.contains(type);
+    }
 
-    int cost = GameProgression.getDeviceMarketPrice(type);
+    if (!isUnlocked) return false;
+
+    int cost = GameProgression.getMarketItemPrice(itemId);
     if (progression.credits >= cost) {
       progression.credits -= cost;
-      progression.purchasedMarketDevices[type] = (progression.purchasedMarketDevices[type] ?? 0) + 1;
+      progression.purchasedMarketDevices[itemId] = (progression.purchasedMarketDevices[itemId] ?? 0) + 1;
       notifyListeners();
       return true;
     }
