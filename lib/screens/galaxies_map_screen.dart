@@ -1,9 +1,11 @@
+import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/galaxy_model.dart';
 import '../models/game_progression.dart';
 import '../game/game_controller.dart';
 
-class GalaxiesMapScreen extends StatelessWidget {
+class GalaxiesMapScreen extends StatefulWidget {
   final GameController controller;
   final Function(String) onGalaxySelected;
   final VoidCallback onBackToMenu;
@@ -16,22 +18,46 @@ class GalaxiesMapScreen extends StatelessWidget {
   });
 
   @override
+  State<GalaxiesMapScreen> createState() => _GalaxiesMapScreenState();
+}
+
+class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Scroll automatically to the bottom on load to highlight the latest active unlocked galaxy
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E14),
       body: ListenableBuilder(
-        listenable: controller,
+        listenable: widget.controller,
         builder: (context, _) {
-          final progression = controller.progression;
+          final progression = widget.controller.progression;
           final galaxies = preloadedGalaxies;
 
           return SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // Header Block
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -39,11 +65,11 @@ class GalaxiesMapScreen extends StatelessWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                            onPressed: onBackToMenu,
+                            onPressed: widget.onBackToMenu,
                           ),
                           const SizedBox(width: 8),
                           const Text(
-                            "GALACTIC EMPIRE MAP",
+                            "GALACTIC COMMAND",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -53,7 +79,7 @@ class GalaxiesMapScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // Currencies status
+                      // Core Resources Chips
                       Row(
                         children: [
                           _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
@@ -63,136 +89,151 @@ class GalaxiesMapScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Container(
                     height: 1,
-                    color: const Color(0xFF00ADB5).withOpacity(0.3),
+                    color: const Color(0xFF00ADB5).withOpacity(0.2),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Subtitle
                   const Text(
-                    "SELECT TARGET SECTOR GALAXY",
+                    "COSMIC SECTOR MAPPING SYSTEM",
                     style: TextStyle(
                       color: Color(0xFF00FFF5),
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Galaxy Grid List
+                  // Responsive Scrolling Snake Path Layout
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: galaxies.length,
-                      itemBuilder: (context, index) {
-                        final galaxy = galaxies[index];
-                        final isUnlocked = galaxy.checkUnlockStatus(progression);
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final mapWidth = constraints.maxWidth;
+                        const double segmentH = 220.0;
+                        final double totalH = segmentH * galaxies.length + 80.0;
+                        const double bottomMargin = 40.0;
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: InkWell(
-                            onTap: isUnlocked ? () => onGalaxySelected(galaxy.id) : null,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Opacity(
-                              opacity: isUnlocked ? 1.0 : 0.65,
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF161B22),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isUnlocked
-                                        ? const Color(0xFF00ADB5).withOpacity(0.4)
-                                        : Colors.redAccent.withOpacity(0.2),
-                                    width: 1.5,
+                        // Calculate mathematical coordinates for each galaxy center
+                        final List<Offset> centers = [];
+                        for (int i = 0; i < galaxies.length; i++) {
+                          final bool isLeft = (i % 2 == 0);
+                          final double gx = isLeft ? mapWidth * 0.28 : mapWidth * 0.72;
+                          final double gy = totalH - bottomMargin - (i * segmentH) - (segmentH / 2);
+                          centers.add(Offset(gx, gy));
+                        }
+
+                        return SingleChildScrollView(
+                          controller: _scrollController,
+                          child: Container(
+                            width: mapWidth,
+                            height: totalH,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B0E14),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFF132238), width: 1.0),
+                            ),
+                            child: Stack(
+                              children: [
+                                // 1. Space Grid Background
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _CosmicGridPainter(),
                                   ),
-                                  boxShadow: isUnlocked
-                                      ? [
-                                          BoxShadow(
-                                            color: const Color(0xFF00ADB5).withOpacity(0.08),
-                                            blurRadius: 16,
-                                            offset: const Offset(0, 4),
-                                          )
-                                        ]
-                                      : null,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          galaxy.name.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.0,
-                                          ),
-                                        ),
-                                        if (isUnlocked)
-                                          const Icon(Icons.chevron_right, color: Color(0xFF00FFF5))
-                                        else
-                                          const Icon(Icons.lock, color: Colors.redAccent, size: 18),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      galaxy.description,
-                                      style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.4),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Container(
-                                      height: 1,
-                                      color: Colors.white.withOpacity(0.06),
-                                    ),
-                                    const SizedBox(height: 12),
 
-                                    // Dynamic Requirements Panel
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          isUnlocked ? "SYSTEM ACTIVE" : "LOCK SPECIFICATIONS",
-                                          style: TextStyle(
-                                            color: isUnlocked ? Colors.greenAccent : Colors.redAccent,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.8,
+                                // 2. Connecting Snake Dotted Path Line
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: _SnakePathPainter(
+                                      centers: centers,
+                                      completedGalaxyIds: progression.completedGalaxyIds,
+                                      galaxies: galaxies,
+                                    ),
+                                  ),
+                                ),
+
+                                // 3. Interactive Procedural Galaxy Node Widgets
+                                ...List.generate(galaxies.length, (index) {
+                                  final galaxy = galaxies[index];
+                                  final center = centers[index];
+                                  final isUnlocked = galaxy.checkUnlockStatus(progression);
+                                  final isCompleted = progression.completedGalaxyIds.contains(galaxy.id);
+                                  
+                                  return Positioned(
+                                    left: center.dx - 60.0,
+                                    top: center.dy - 60.0,
+                                    width: 120.0,
+                                    height: 120.0,
+                                    child: GestureDetector(
+                                      onTap: () => _showGalaxyTravelModal(context, galaxy, isUnlocked, progression),
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          // Outer Glowing Halo
+                                          Container(
+                                            width: 100,
+                                            height: 100,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: (isUnlocked
+                                                      ? const Color(0xFF00ADB5)
+                                                      : Colors.redAccent).withOpacity(0.08),
+                                                  blurRadius: 20,
+                                                  spreadRadius: 2,
+                                                )
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        if (isUnlocked)
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.check_circle_outline,
-                                                size: 11,
-                                                color: Colors.greenAccent,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              const Expanded(
-                                                child: Text(
-                                                  "Outpost secured and fully operational.",
-                                                  style: TextStyle(
-                                                    color: Colors.grey,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
+                                          
+                                          // Procedural Custom Painted Disk
+                                          SizedBox(
+                                            width: 110,
+                                            height: 110,
+                                            child: CustomPaint(
+                                              painter: _buildGalaxyPainter(galaxy.id, isUnlocked),
+                                            ),
+                                          ),
+
+                                          // Central Status Center Icon Badge
+                                          _buildCenterIconBadge(isUnlocked, isCompleted),
+
+                                          // Floating Galaxy Tag Banner (Underneath Node)
+                                          Positioned(
+                                            bottom: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF161B22).withOpacity(0.85),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color: isUnlocked
+                                                      ? const Color(0xFF00ADB5).withOpacity(0.3)
+                                                      : Colors.redAccent.withOpacity(0.2),
+                                                  width: 1.0,
                                                 ),
                                               ),
-                                            ],
-                                          )
-                                        else
-                                          ..._buildLockBullets(galaxy, progression),
-                                      ],
+                                              child: Text(
+                                                galaxy.name.toUpperCase(),
+                                                style: TextStyle(
+                                                  color: isUnlocked ? Colors.white : Colors.grey,
+                                                  fontSize: 8,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                ),
-                              ),
+                                  );
+                                }),
+                              ],
                             ),
                           ),
                         );
@@ -230,6 +271,204 @@ class GalaxiesMapScreen extends StatelessWidget {
     );
   }
 
+  CustomPainter _buildGalaxyPainter(String galaxyId, bool isUnlocked) {
+    switch (galaxyId) {
+      case 'galaxy_2':
+        return _NebularDepthsPainter(isUnlocked: isUnlocked);
+      case 'galaxy_3':
+        return _OuterHorizonPainter(isUnlocked: isUnlocked);
+      case 'galaxy_1':
+      default:
+        return _CoreOutpostPainter(isUnlocked: isUnlocked);
+    }
+  }
+
+  Widget _buildCenterIconBadge(bool isUnlocked, bool isCompleted) {
+    if (isCompleted) {
+      return Container(
+        width: 22,
+        height: 22,
+        decoration: const BoxDecoration(
+          color: Colors.green,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.check, color: Colors.white, size: 12),
+      );
+    }
+
+    if (!isUnlocked) {
+      return Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B0E14).withOpacity(0.9),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.redAccent, width: 1.0),
+        ),
+        child: const Icon(Icons.lock, color: Colors.redAccent, size: 10),
+      );
+    }
+
+    // Active unlocked, show pulsing pointer
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: const Color(0xFF00ADB5),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00FFF5).withOpacity(0.4),
+            blurRadius: 8,
+          )
+        ],
+      ),
+      child: const Icon(Icons.gps_fixed, color: Colors.white, size: 12),
+    );
+  }
+
+  void _showGalaxyTravelModal(BuildContext context, GalaxyModel galaxy, bool isUnlocked, GameProgression progression) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF161B22).withOpacity(0.95),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18.5),
+              side: BorderSide(
+                color: isUnlocked ? const Color(0xFF00ADB5) : Colors.redAccent,
+                width: 1.5,
+              ),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  isUnlocked ? Icons.travel_explore : Icons.lock_outline,
+                  color: isUnlocked ? const Color(0xFF00FFF5) : Colors.redAccent,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    galaxy.name.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "GALAXY DIRECTIVE & LORE:",
+                    style: TextStyle(
+                      color: Color(0xFF00FFF5),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    galaxy.description,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Bullet Requirements List
+                  Text(
+                    isUnlocked ? "SYSTEM SPECIFICATIONS MET:" : "LOCK REQUIREMENTS CHECKLIST:",
+                    style: TextStyle(
+                      color: isUnlocked ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (isUnlocked)
+                    Row(
+                      children: const [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 12,
+                          color: Colors.greenAccent,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "Access key cleared. Sector open.",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    ..._buildLockBullets(galaxy, progression),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  "DISMISS",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: isUnlocked
+                    ? () {
+                        Navigator.of(context).pop();
+                        widget.onGalaxySelected(galaxy.id);
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00ADB5),
+                  disabledBackgroundColor: const Color(0xFF222831),
+                  foregroundColor: Colors.white,
+                  disabledForegroundColor: Colors.grey.withOpacity(0.4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: isUnlocked ? Colors.transparent : const Color(0xFF393E46),
+                    ),
+                  ),
+                ),
+                child: Text(
+                  isUnlocked ? "TRAVEL TO SECTOR" : "SECTOR GATED",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   List<Widget> _buildLockBullets(GalaxyModel galaxy, GameProgression progression) {
     final List<Widget> bullets = [];
 
@@ -239,7 +478,7 @@ class GalaxiesMapScreen extends StatelessWidget {
       final prereqName = preloadedGalaxies.firstWhere((g) => g.id == prereqId, orElse: () => galaxy).name;
       bullets.add(
         Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 6),
           child: Row(
             children: [
               Icon(
@@ -247,13 +486,13 @@ class GalaxiesMapScreen extends StatelessWidget {
                 size: 11,
                 color: met ? Colors.greenAccent : Colors.redAccent,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "Requires clearance of $prereqName Base",
                   style: TextStyle(
                     color: met ? Colors.grey : Colors.amberAccent,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -269,7 +508,7 @@ class GalaxiesMapScreen extends StatelessWidget {
       final met = progression.laserIntensityLevel >= galaxy.minLaserIntensityLevel;
       bullets.add(
         Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 6),
           child: Row(
             children: [
               Icon(
@@ -277,13 +516,13 @@ class GalaxiesMapScreen extends StatelessWidget {
                 size: 11,
                 color: met ? Colors.greenAccent : Colors.redAccent,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "Requires Laser Intensity Level ${galaxy.minLaserIntensityLevel} (Current: ${progression.laserIntensityLevel})",
                   style: TextStyle(
                     color: met ? Colors.grey : Colors.amberAccent,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -299,7 +538,7 @@ class GalaxiesMapScreen extends StatelessWidget {
       final met = progression.aimingComputerLevel >= galaxy.minAimingComputerLevel;
       bullets.add(
         Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 6),
           child: Row(
             children: [
               Icon(
@@ -307,13 +546,13 @@ class GalaxiesMapScreen extends StatelessWidget {
                 size: 11,
                 color: met ? Colors.greenAccent : Colors.redAccent,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "Requires Aiming Computer Level ${galaxy.minAimingComputerLevel} (Current: ${progression.aimingComputerLevel})",
                   style: TextStyle(
                     color: met ? Colors.grey : Colors.amberAccent,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -330,7 +569,7 @@ class GalaxiesMapScreen extends StatelessWidget {
       final blueprintName = blueprintType.name.toUpperCase();
       bullets.add(
         Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 6),
           child: Row(
             children: [
               Icon(
@@ -338,13 +577,13 @@ class GalaxiesMapScreen extends StatelessWidget {
                 size: 11,
                 color: met ? Colors.greenAccent : Colors.redAccent,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "Requires Researched Blueprint: $blueprintName",
                   style: TextStyle(
                     color: met ? Colors.grey : Colors.amberAccent,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -359,7 +598,7 @@ class GalaxiesMapScreen extends StatelessWidget {
     if (bullets.isEmpty && galaxy.requirementDescription.isNotEmpty) {
       bullets.add(
         Padding(
-          padding: const EdgeInsets.only(top: 4),
+          padding: const EdgeInsets.only(top: 6),
           child: Row(
             children: [
               const Icon(
@@ -367,13 +606,13 @@ class GalaxiesMapScreen extends StatelessWidget {
                 size: 11,
                 color: Colors.redAccent,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   galaxy.requirementDescription,
                   style: const TextStyle(
                     color: Colors.amberAccent,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -386,4 +625,249 @@ class GalaxiesMapScreen extends StatelessWidget {
 
     return bullets;
   }
+}
+
+// ------------------------------------------------------------------
+// Track Path Painters
+// ------------------------------------------------------------------
+
+class _SnakePathPainter extends CustomPainter {
+  final List<Offset> centers;
+  final Set<String> completedGalaxyIds;
+  final List<GalaxyModel> galaxies;
+
+  _SnakePathPainter({
+    required this.centers,
+    required this.completedGalaxyIds,
+    required this.galaxies,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (centers.length < 2) return;
+
+    final linePaint = Paint()
+      ..color = const Color(0xFF1E2633)
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke;
+
+    final activePaint = Paint()
+      ..color = const Color(0xFF00ADB5)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke;
+
+    // Draw curvy snake connections between node centers
+    for (int i = 0; i < centers.length - 1; i++) {
+      final p1 = centers[i];
+      final p2 = centers[i + 1];
+
+      // Path is active if the current galaxy is cleared
+      final isPathActive = completedGalaxyIds.contains(galaxies[i].id);
+
+      final path = Path();
+      path.moveTo(p1.dx, p1.dy);
+
+      // Interpolate with a curved bezier logic to form a beautiful snake curve
+      final double controlX = p1.dx;
+      final double controlY = p2.dy;
+      path.quadraticBezierTo(controlX, controlY, p2.dx, p2.dy);
+
+      _drawDashedPath(canvas, path, isPathActive ? activePaint : linePaint);
+    }
+  }
+
+  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
+    const dashWidth = 8.0;
+    const dashSpace = 6.0;
+
+    final PathMetrics pathMetrics = path.computeMetrics();
+    for (PathMetric metric in pathMetrics) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double length = min(dashWidth, metric.length - distance);
+        final Path extract = metric.extractPath(distance, distance + length);
+        canvas.drawPath(extract, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SnakePathPainter oldDelegate) {
+    return oldDelegate.centers.length != centers.length ||
+        oldDelegate.completedGalaxyIds.length != completedGalaxyIds.length;
+  }
+}
+
+class _CosmicGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = const Color(0xFF132238).withOpacity(0.12)
+      ..strokeWidth = 0.8;
+
+    const spacing = 44.0;
+    for (double i = 0; i < size.width; i += spacing) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), gridPaint);
+    }
+    for (double j = 0; j < size.height; j += spacing) {
+      canvas.drawLine(Offset(0, j), Offset(size.width, j), gridPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ------------------------------------------------------------------
+// Procedural Vector Galaxy Painters
+// ------------------------------------------------------------------
+
+// Galaxy 1: Core Outpost (Cyan base, circular orbits)
+class _CoreOutpostPainter extends CustomPainter {
+  final bool isUnlocked;
+  _CoreOutpostPainter({required this.isUnlocked});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2.0, size.height / 2.0);
+    final coreColor = isUnlocked ? const Color(0xFF00ADB5) : const Color(0xFF556070);
+
+    // Orbit Ring 1
+    final orbitPaint = Paint()
+      ..color = coreColor.withOpacity(0.15)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(center, 24.0, orbitPaint);
+
+    // Orbit Ring 2
+    canvas.drawCircle(center, 38.0, orbitPaint);
+
+    // Inner Glowing Core
+    final corePaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          coreColor.withOpacity(1.0),
+          coreColor.withOpacity(0.5),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 18.0));
+    canvas.drawCircle(center, 18.0, corePaint);
+
+    // Mini Orbiting Moons
+    final moonPaint = Paint()
+      ..color = coreColor.withOpacity(isUnlocked ? 0.85 : 0.4)
+      ..style = PaintingStyle.fill;
+    
+    // Moon 1 on Ring 1 (static coordinates)
+    const angle1 = 45 * pi / 180.0;
+    canvas.drawCircle(Offset(center.dx + 24.0 * cos(angle1), center.dy + 24.0 * sin(angle1)), 3.0, moonPaint);
+
+    // Moon 2 on Ring 2
+    const angle2 = 210 * pi / 180.0;
+    canvas.drawCircle(Offset(center.dx + 38.0 * cos(angle2), center.dy + 38.0 * sin(angle2)), 4.0, moonPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Galaxy 2: Nebular Depths (Pink-purple spiral, double arms)
+class _NebularDepthsPainter extends CustomPainter {
+  final bool isUnlocked;
+  _NebularDepthsPainter({required this.isUnlocked});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2.0, size.height / 2.0);
+    final baseColor = isUnlocked ? const Color(0xFFFF2E93) : const Color(0xFF556070);
+    final secondaryColor = isUnlocked ? const Color(0xFF00FFF5) : const Color(0xFF3A4454);
+
+    // Draw central disk glow
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          baseColor.withOpacity(0.5),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 24.0));
+    canvas.drawCircle(center, 24.0, glowPaint);
+
+    // Draw Logarithmic Spiral arms
+    final dotPaint = Paint()
+      ..style = PaintingStyle.fill;
+
+    for (int arm = 0; arm < 2; arm++) {
+      final double startAngleOffset = arm * pi;
+      
+      // Plot dots along logarithmic spiral: r = a * e^(b * theta)
+      for (double theta = 0; theta < 4.5; theta += 0.15) {
+        final double r = 6.0 + 7.5 * theta;
+        if (r > size.width / 2.1) break;
+
+        final double x = center.dx + r * cos(theta + startAngleOffset);
+        final double y = center.dy + r * sin(theta + startAngleOffset);
+
+        // Mix arm colors
+        final color = Color.lerp(baseColor, secondaryColor, theta / 4.5)!;
+        dotPaint.color = color.withOpacity((1.0 - (theta / 5.5)).clamp(0.1, 0.95));
+
+        canvas.drawCircle(Offset(x, y), max(1.2, 3.5 - (theta * 0.4)), dotPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Galaxy 3: Outer Horizon (Warped high-gravity orange black hole accretion disk)
+class _OuterHorizonPainter extends CustomPainter {
+  final bool isUnlocked;
+  _OuterHorizonPainter({required this.isUnlocked});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2.0, size.height / 2.0);
+    final themeColor = isUnlocked ? const Color(0xFFFFB703) : const Color(0xFF556070);
+
+    // Accretion Ring glow (large, faint oval/disk)
+    final ringPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          themeColor.withOpacity(0.65),
+          themeColor.withOpacity(0.15),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: 46.0));
+    canvas.drawCircle(center, 46.0, ringPaint);
+
+    // Warped Gravitational Accretion Disk (horizontal-leaning vector ring)
+    final warpedPaint = Paint()
+      ..color = themeColor.withOpacity(isUnlocked ? 0.75 : 0.3)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke;
+    
+    // Draw an elliptical warped vector ring
+    canvas.drawOval(
+      Rect.fromCenter(center: center, width: 78.0, height: 26.0),
+      warpedPaint,
+    );
+
+    // Center Event Horizon (The absolute black hole void)
+    final blackHolePaint = Paint()
+      ..color = const Color(0xFF0B0E14)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 12.0, blackHolePaint);
+
+    // Glowing border around black hole
+    final borderPaint = Paint()
+      ..color = themeColor.withOpacity(isUnlocked ? 0.95 : 0.4)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(center, 12.0, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
