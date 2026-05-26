@@ -61,29 +61,38 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                            onPressed: widget.onBackToMenu,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            "GALACTIC COMMAND",
-                            style: TextStyle(
-                              color: const Color(0xFFFFFFFF),
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
+                              onPressed: widget.onBackToMenu,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                "GALACTIC COMMAND",
+                                style: TextStyle(
+                                  color: Color(0xFFFFFFFF),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       // Core Resources Chips
                       Row(
                         children: [
                           _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
                         ],
                       ),
@@ -263,7 +272,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
 
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
@@ -272,11 +281,11 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+            style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.bold),
           ),
         ],
       ),
