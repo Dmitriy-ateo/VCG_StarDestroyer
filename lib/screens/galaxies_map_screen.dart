@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/galaxy_model.dart';
+import '../models/game_progression.dart';
 import '../game/game_controller.dart';
 
 class GalaxiesMapScreen extends StatelessWidget {
@@ -151,8 +152,8 @@ class GalaxiesMapScreen extends StatelessWidget {
                                     const SizedBox(height: 12),
 
                                     // Dynamic Requirements Panel
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           isUnlocked ? "SYSTEM ACTIVE" : "LOCK SPECIFICATIONS",
@@ -163,14 +164,30 @@ class GalaxiesMapScreen extends StatelessWidget {
                                             letterSpacing: 0.8,
                                           ),
                                         ),
-                                        Text(
-                                          isUnlocked ? "OUTPOST SECURED" : galaxy.requirementDescription,
-                                          style: TextStyle(
-                                            color: isUnlocked ? Colors.grey : Colors.amberAccent,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                        const SizedBox(height: 6),
+                                        if (isUnlocked)
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.check_circle_outline,
+                                                size: 11,
+                                                color: Colors.greenAccent,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              const Expanded(
+                                                child: Text(
+                                                  "Outpost secured and fully operational.",
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        else
+                                          ..._buildLockBullets(galaxy, progression),
                                       ],
                                     ),
                                   ],
@@ -211,5 +228,162 @@ class GalaxiesMapScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildLockBullets(GalaxyModel galaxy, GameProgression progression) {
+    final List<Widget> bullets = [];
+
+    // 1. Prerequisite galaxies check
+    for (var prereqId in galaxy.prerequisiteGalaxyIds) {
+      final met = progression.completedGalaxyIds.contains(prereqId);
+      final prereqName = preloadedGalaxies.firstWhere((g) => g.id == prereqId, orElse: () => galaxy).name;
+      bullets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(
+                met ? Icons.check_circle_outline : Icons.lock_outline,
+                size: 11,
+                color: met ? Colors.greenAccent : Colors.redAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  "Requires clearance of $prereqName Base",
+                  style: TextStyle(
+                    color: met ? Colors.grey : Colors.amberAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 2. Laser Intensity check
+    if (galaxy.minLaserIntensityLevel > 1) {
+      final met = progression.laserIntensityLevel >= galaxy.minLaserIntensityLevel;
+      bullets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(
+                met ? Icons.check_circle_outline : Icons.lock_outline,
+                size: 11,
+                color: met ? Colors.greenAccent : Colors.redAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  "Requires Laser Intensity Level ${galaxy.minLaserIntensityLevel} (Current: ${progression.laserIntensityLevel})",
+                  style: TextStyle(
+                    color: met ? Colors.grey : Colors.amberAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 3. Aiming Computer check
+    if (galaxy.minAimingComputerLevel > 1) {
+      final met = progression.aimingComputerLevel >= galaxy.minAimingComputerLevel;
+      bullets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(
+                met ? Icons.check_circle_outline : Icons.lock_outline,
+                size: 11,
+                color: met ? Colors.greenAccent : Colors.redAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  "Requires Aiming Computer Level ${galaxy.minAimingComputerLevel} (Current: ${progression.aimingComputerLevel})",
+                  style: TextStyle(
+                    color: met ? Colors.grey : Colors.amberAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 4. Blueprints check
+    for (var blueprintType in galaxy.requiredUnlockedBlueprints) {
+      final met = progression.unlockedDevices.contains(blueprintType);
+      final blueprintName = blueprintType.name.toUpperCase();
+      bullets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              Icon(
+                met ? Icons.check_circle_outline : Icons.lock_outline,
+                size: 11,
+                color: met ? Colors.greenAccent : Colors.redAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  "Requires Researched Blueprint: $blueprintName",
+                  style: TextStyle(
+                    color: met ? Colors.grey : Colors.amberAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If empty for some reason, fallback
+    if (bullets.isEmpty && galaxy.requirementDescription.isNotEmpty) {
+      bullets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.lock_outline,
+                size: 11,
+                color: Colors.redAccent,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  galaxy.requirementDescription,
+                  style: const TextStyle(
+                    color: Colors.amberAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return bullets;
   }
 }
