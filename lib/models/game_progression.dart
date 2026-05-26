@@ -10,7 +10,7 @@ class GameProgression {
   
   // Upgrades
   int laserIntensityLevel; // 1 to 5
-  int aimingComputerLevel; // 1 to 3 (0 = locked, 1 = short preview, 2 = full preview)
+  int aimingComputerLevel; // 1 to 10 (each adds 10% preview length, 10 = 100% full preview)
   int chassisCapacityLevel; // 1 to 5 (bonus inventory slots)
 
   GameProgression({
@@ -72,14 +72,15 @@ class GameProgression {
 
   // Cost calculations for Shop
   static int getUpgradeCost(String type, int currentLevel) {
-    if (currentLevel >= 5) return -1; // Maxed out
     switch (type) {
       case 'intensity':
+        if (currentLevel >= 5) return -1; // Maxed out
         return currentLevel * 150;
       case 'aiming':
-        if (currentLevel >= 3) return -1;
-        return currentLevel * 200;
+        if (currentLevel >= 10) return -1; // Maxed out (10 levels)
+        return currentLevel * 100;
       case 'chassis':
+        if (currentLevel >= 5) return -1; // Maxed out
         return currentLevel * 120;
       default:
         return 9999;

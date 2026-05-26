@@ -128,7 +128,7 @@ class ResearchShopScreen extends StatelessWidget {
                                   icon: Icons.radar,
                                   upgradeType: "aiming",
                                   currentLvl: progression.aimingComputerLevel,
-                                  maxLvl: 3,
+                                  maxLvl: 10,
                                   cost: GameProgression.getUpgradeCost("aiming", progression.aimingComputerLevel),
                                   color: const Color(0xFF00ADB5),
                                 ),

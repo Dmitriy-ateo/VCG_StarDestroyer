@@ -245,9 +245,9 @@ class BoardPainter extends CustomPainter {
       for (var path in previewResult.paths) {
         if (path.isEmpty) continue;
         
-        final maxPreviewPoints = aimingComputerLevel == 1 
-            ? (2.0 / LaserCalculator.stepSize).toInt() // Short preview
-            : path.length; // Full preview
+        // Calculate dynamic maximum preview points based on level (10% per level)
+        final double percentage = aimingComputerLevel * 0.1;
+        final int maxPreviewPoints = (path.length * percentage).toInt();
 
         final renderLength = min(path.length, maxPreviewPoints);
         final pathObj = Path();
