@@ -6,6 +6,8 @@ import 'screens/level_select_screen.dart';
 import 'screens/game_board_screen.dart';
 import 'screens/research_shop_screen.dart';
 import 'screens/market_screen.dart';
+import 'screens/galaxies_map_screen.dart';
+import 'screens/galaxy_board_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,9 +55,10 @@ class GameRouter extends StatefulWidget {
 }
 
 class _GameRouterState extends State<GameRouter> {
-  // Screens: 'menu', 'select', 'game', 'shop', 'market'
+  // Screens: 'menu', 'select', 'game', 'shop', 'market', 'galaxies', 'galaxy_board'
   String _currentScreen = 'menu';
   String _previousScreen = 'menu';
+  String _selectedGalaxyId = '';
   final GameController _controller = GameController();
 
   void _navigateTo(String screen) {
@@ -76,6 +79,7 @@ class _GameRouterState extends State<GameRouter> {
     switch (_currentScreen) {
       case 'menu':
         return MainMenuScreen(
+          onStartCampaign: () => _navigateTo('galaxies'),
           onStartGame: () => _navigateTo('select'),
           onOpenShop: () => _navigateTo('shop'),
           onOpenMarket: () => _navigateTo('market'),
@@ -92,7 +96,7 @@ class _GameRouterState extends State<GameRouter> {
       case 'game':
         return GameBoardScreen(
           controller: _controller,
-          onBackToMenu: () => _navigateTo('select'),
+          onBackToMenu: () => _navigateTo(_controller.activeQuest != null ? 'galaxy_board' : 'select'),
           onGoToShop: () => _navigateTo('market'),
         );
       case 'shop':
@@ -111,8 +115,30 @@ class _GameRouterState extends State<GameRouter> {
             _navigateTo(_previousScreen == 'game' ? 'game' : 'menu');
           },
         );
+      case 'galaxies':
+        return GalaxiesMapScreen(
+          controller: _controller,
+          onGalaxySelected: (galaxyId) {
+            setState(() {
+              _selectedGalaxyId = galaxyId;
+            });
+            _navigateTo('galaxy_board');
+          },
+          onBackToMenu: () => _navigateTo('menu'),
+        );
+      case 'galaxy_board':
+        return GalaxyBoardScreen(
+          controller: _controller,
+          galaxyId: _selectedGalaxyId,
+          onQuestSelected: (quest) {
+            _controller.loadQuest(quest);
+            _navigateTo('game');
+          },
+          onBackToMap: () => _navigateTo('galaxies'),
+        );
       default:
         return MainMenuScreen(
+          onStartCampaign: () => _navigateTo('galaxies'),
           onStartGame: () => _navigateTo('select'),
           onOpenShop: () => _navigateTo('shop'),
           onOpenMarket: () => _navigateTo('market'),

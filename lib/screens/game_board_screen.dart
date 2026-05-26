@@ -787,15 +787,19 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                   if (isWin)
                     ElevatedButton(
                       onPressed: () {
-                        // Move to next level if exists
-                        final nextId = widget.controller.currentLevel.id + 1;
-                        final nextExists = preloadedLevels.any((l) => l.id == nextId);
-                        if (nextExists) {
-                          widget.controller.loadLevel(nextId);
-                        } else {
-                          // Loop back to level 1 or show complete
-                          widget.controller.loadLevel(1);
+                        if (widget.controller.activeQuest != null) {
                           widget.onBackToMenu();
+                        } else {
+                          // Move to next level if exists
+                          final nextId = widget.controller.currentLevel.id + 1;
+                          final nextExists = preloadedLevels.any((l) => l.id == nextId);
+                          if (nextExists) {
+                            widget.controller.loadLevel(nextId);
+                          } else {
+                            // Loop back to level 1 or show complete
+                            widget.controller.loadLevel(1);
+                            widget.onBackToMenu();
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -803,7 +807,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
-                      child: const Text("NEXT SECTOR"),
+                      child: Text(widget.controller.activeQuest != null ? "RETURN TO MAP" : "NEXT SECTOR"),
                     ),
                 ],
               ),

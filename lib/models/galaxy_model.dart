@@ -1,3 +1,5 @@
+import 'dart:convert';
+import '../config/campaign_config.dart';
 import 'device_model.dart';
 import 'level_data.dart';
 import 'game_progression.dart';
@@ -127,4 +129,11 @@ class GalaxyModel {
           .toList(),
     );
   }
+}
+
+final List<GalaxyModel> preloadedGalaxies = _loadGalaxiesFromConfig();
+
+List<GalaxyModel> _loadGalaxiesFromConfig() {
+  final List<dynamic> list = json.decode(campaignJsonConfig);
+  return list.map((jsonMap) => GalaxyModel.fromJson(jsonMap as Map<String, dynamic>)).toList();
 }

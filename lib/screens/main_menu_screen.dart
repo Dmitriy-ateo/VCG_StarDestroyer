@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 class MainMenuScreen extends StatefulWidget {
+  final VoidCallback onStartCampaign;
   final VoidCallback onStartGame;
   final VoidCallback onOpenShop;
   final VoidCallback onOpenMarket;
 
   const MainMenuScreen({
     super.key,
+    required this.onStartCampaign,
     required this.onStartGame,
     required this.onOpenShop,
     required this.onOpenMarket,
@@ -119,15 +121,14 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                   // Menu Buttons
                   _buildMenuButton(
                     label: "LAUNCH CAMPAIGN",
-                    onPressed: null,
-                    isPrimary: false,
-                    subtitle: "[COMING SOON - REDESIGN IN PROGRESS]",
+                    onPressed: widget.onStartCampaign,
+                    isPrimary: true,
                   ),
                   const SizedBox(height: 16),
                   _buildMenuButton(
                     label: "TRAINING CENTER",
                     onPressed: widget.onStartGame,
-                    isPrimary: true,
+                    isPrimary: false,
                   ),
                   const SizedBox(height: 16),
                   _buildMenuButton(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/device_model.dart';
 import '../models/level_data.dart';
 import '../models/game_progression.dart';
+import '../models/galaxy_model.dart';
 import 'laser_calculator.dart';
 
 enum PlayState {
@@ -19,6 +20,7 @@ class GameController extends ChangeNotifier {
   // Active Level State
   late LevelData currentLevel;
   PlayState playState = PlayState.editing;
+  QuestModel? activeQuest;
 
   // Active Level Rewards Earned
   int creditsEarned = 0;
@@ -47,6 +49,8 @@ class GameController extends ChangeNotifier {
   void loadLevel(int levelId) {
     // Stop any animations
     _cleanupAnimation();
+
+    activeQuest = null;
 
     final baseLevel = preloadedLevels.firstWhere(
       (l) => l.id == levelId,
@@ -101,6 +105,98 @@ class GameController extends ChangeNotifier {
             isPlaced: false,
           ));
         }
+      }
+    }
+
+    // Append market-purchased devices to the inventory pool
+    progression.purchasedMarketDevices.forEach((itemId, count) {
+      if (count <= 0) return;
+      
+      if (itemId == 'portal') {
+        for (int i = 0; i < count; i++) {
+          final devId = "market_portal_${idCounter++}";
+          final pairIdString = "market_portal_${idCounter++}";
+          
+          inventory.add(DeviceModel(
+            id: devId,
+            type: DeviceType.portal,
+            portalPairId: pairIdString,
+            isPlaced: false,
+          ));
+          inventory.add(DeviceModel(
+            id: pairIdString,
+            type: DeviceType.portal,
+            portalPairId: devId,
+            isPlaced: false,
+          ));
+        }
+      } else if (itemId.startsWith('splitter_')) {
+        final angleStr = itemId.split('_')[1];
+        final angle = double.tryParse(angleStr) ?? 180.0;
+        for (int i = 0; i < count; i++) {
+          inventory.add(DeviceModel(
+            id: "market_${itemId}_${idCounter++}",
+            type: DeviceType.splitter,
+            splitAngleDegrees: angle,
+            isPlaced: false,
+          ));
+        }
+      } else {
+        final type = DeviceType.values.firstWhere((e) => e.name == itemId, orElse: () => DeviceType.reflector);
+        for (int i = 0; i < count; i++) {
+          inventory.add(DeviceModel(
+            id: "market_${itemId}_${idCounter++}",
+            type: type,
+            isPlaced: false,
+          ));
+        }
+      }
+    });
+
+    notifyListeners();
+  }
+
+  // Load campaign quest configuration
+  void loadQuest(QuestModel quest) {
+    _cleanupAnimation();
+    activeQuest = quest;
+    currentLevel = quest.levelData.clone();
+    aimingAngle = currentLevel.deathStarInitialAngle;
+    playState = PlayState.editing;
+    traceResult = null;
+    animationProgress = 0.0;
+    selectedInventoryDevice = null;
+    placedDevices = [];
+    creditsEarned = 0;
+    researchPointsEarned = 0;
+
+    // Initialize inventory from level data templates
+    inventory = [];
+    int idCounter = 0;
+    
+    // For campaign quests, always unlock the level's available inventory
+    for (var template in currentLevel.availableInventory) {
+      final type = template.type;
+      String devId = "inv_${type.name}_${idCounter++}";
+
+      // If portal, handle pair creation
+      if (type == DeviceType.portal) {
+        final pairIdString = "inv_${type.name}_${idCounter++}";
+        inventory.add(template.copyWith(
+          id: devId,
+          portalPairId: pairIdString,
+          isPlaced: false,
+        ));
+        inventory.add(template.copyWith(
+          id: pairIdString,
+          portalPairId: devId,
+          isPlaced: false,
+        ));
+      } else {
+        inventory.add(template.copyWith(
+          id: devId,
+          isPlaced: false,
+        ));
       }
     }
 
@@ -278,18 +374,48 @@ class GameController extends ChangeNotifier {
       if (traceResult!.success) {
         playState = PlayState.victory;
         
-        final alreadyCompleted = progression.completedLevelIds.contains(currentLevel.id);
-        if (!alreadyCompleted) {
-          // Credits and RP rewards reduced by 10x
-          creditsEarned = currentLevel.creditsReward ~/ 10;
-          researchPointsEarned = currentLevel.researchPointsReward ~/ 10;
-          
-          progression.credits += creditsEarned;
-          progression.researchPoints += researchPointsEarned;
-          progression.completedLevelIds.add(currentLevel.id);
+        if (activeQuest != null) {
+          final questId = activeQuest!.id;
+          final alreadyCompleted = progression.completedQuestIds.contains(questId);
+          if (!alreadyCompleted) {
+            creditsEarned = activeQuest!.creditsReward;
+            researchPointsEarned = activeQuest!.rpReward;
+            
+            progression.credits += creditsEarned;
+            progression.researchPoints += researchPointsEarned;
+            progression.completedQuestIds.add(questId);
+            
+            // Check if all lore quests of the galaxy are completed
+            for (var galaxy in preloadedGalaxies) {
+              final hasQuest = galaxy.quests.any((q) => q.id == questId);
+              if (hasQuest) {
+                final allLoreCompleted = galaxy.quests
+                    .where((q) => q.type == QuestType.lore)
+                    .every((q) => progression.completedQuestIds.contains(q.id));
+                if (allLoreCompleted) {
+                  progression.completedGalaxyIds.add(galaxy.id);
+                }
+                break;
+              }
+            }
+          } else {
+            creditsEarned = 0;
+            researchPointsEarned = 0;
+          }
         } else {
-          creditsEarned = 0;
-          researchPointsEarned = 0;
+          final alreadyCompleted = progression.completedLevelIds.contains(currentLevel.id);
+          if (!alreadyCompleted) {
+            // Credits and RP rewards reduced by 10x
+            creditsEarned = currentLevel.creditsReward ~/ 10;
+            researchPointsEarned = currentLevel.researchPointsReward ~/ 10;
+            
+            progression.credits += creditsEarned;
+            progression.researchPoints += researchPointsEarned;
+            progression.completedLevelIds.add(currentLevel.id);
+          } else {
+            creditsEarned = 0;
+            researchPointsEarned = 0;
+          }
         }
       } else {
         playState = PlayState.defeat;
