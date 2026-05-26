@@ -217,7 +217,7 @@ final List<LevelData> preloadedLevels = [
   LevelData(
     id: 6,
     name: "Level 6: Portal Transit",
-    description: "Einstein-Rosen portal transits link the system. The laser shoots up, enters Portal A at (3, 8), teleports out of Portal B at (6, 4) to destroy Kessel.",
+    description: "Einstein-Rosen portal transits link the system. Steer the laser left into a reflector to bounce it up into Portal A at (1, 7), which teleports out of Portal B at (6, 4) to destroy Kessel.",
     deathStarX: 3,
     deathStarY: 11,
     deathStarInitialAngle: -90.0,
@@ -236,7 +236,7 @@ final List<LevelData> preloadedLevels = [
       DeviceModel(id: "t_ref1", type: DeviceType.reflector),
     ],
     presetDevices: [
-      DeviceModel(id: "port1", type: DeviceType.portal, gridX: 3, gridY: 8, portalPairId: "port2", isPlaced: true),
+      DeviceModel(id: "port1", type: DeviceType.portal, gridX: 1, gridY: 7, portalPairId: "port2", isPlaced: true),
       DeviceModel(id: "port2", type: DeviceType.portal, gridX: 6, gridY: 4, portalPairId: "port1", isPlaced: true),
     ],
     creditsReward: 400,
