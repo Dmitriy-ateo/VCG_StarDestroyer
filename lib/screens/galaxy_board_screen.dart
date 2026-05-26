@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/galaxy_model.dart';
 import '../models/game_progression.dart';
+import '../models/level_data.dart';
 import '../game/game_controller.dart';
 import '../game/sector_generator.dart';
 
@@ -32,6 +33,12 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   // Session-persistent daily quests state
   static List<QuestModel>? _sessionDailyQuests;
   static int _completedDailyCount = 0;
+
+  // Session-persistent side quests state mapped by galaxyId
+  static Map<String, List<QuestModel>>? _sessionSideQuestsMap;
+
+  // Session-persistent map of stable quest angles to prevent positions shifting when list size/indices change
+  static final Map<String, double> _questAngles = {};
 
   @override
   void initState() {
@@ -92,13 +99,100 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     );
   }
 
+  // Initialize and refresh side quests list dynamically refilling up to 3 active targets
+  void _initializeSessionSideQuests(GalaxyModel galaxy, GameProgression progression) {
+    _sessionSideQuestsMap ??= {};
+
+    if (_sessionSideQuestsMap![galaxy.id] == null) {
+      // Seed from campaign side quests that are not completed yet
+      final galaxySideQuests = galaxy.quests
+          .where((q) => q.type == QuestType.side && !progression.completedQuestIds.contains(q.id))
+          .toList();
+      _sessionSideQuestsMap![galaxy.id] = galaxySideQuests;
+
+      // Refill to 3 active targets if starting with less
+      while (_sessionSideQuestsMap![galaxy.id]!.length < 3) {
+        _sessionSideQuestsMap![galaxy.id]!.add(_generateUniqueSideQuest(galaxy, progression));
+      }
+    } else {
+      // Clean completed procedural or static side quests
+      final completedIds = progression.completedQuestIds;
+      _sessionSideQuestsMap![galaxy.id]!.removeWhere((q) => completedIds.contains(q.id));
+
+      // Refill back to 3 active targets using procedural side quests
+      while (_sessionSideQuestsMap![galaxy.id]!.length < 3) {
+        _sessionSideQuestsMap![galaxy.id]!.add(_generateUniqueSideQuest(galaxy, progression));
+      }
+    }
+  }
+
+  QuestModel _generateUniqueSideQuest(GalaxyModel galaxy, GameProgression progression) {
+    final sideLevel = SectorGenerator.generateDailySector(progression);
+    final uniqueId = "side_quest_${sideLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
+
+    final List<String> sideTitles = [
+      "Tactical Drift",
+      "Stellar Anomaly",
+      "Quantum Ripple",
+      "Supernova Echo",
+      "Nebula Skirmish",
+      "Stardust Probe",
+      "Cosmic Relay",
+      "Dark Matter Sync"
+    ];
+    final title = "${sideTitles[Random().nextInt(sideTitles.length)]} ${10 + Random().nextInt(90)}";
+
+    final customizedLevel = LevelData(
+      id: sideLevel.id,
+      name: title,
+      description: sideLevel.description,
+      deathStarX: sideLevel.deathStarX,
+      deathStarY: sideLevel.deathStarY,
+      deathStarInitialAngle: sideLevel.deathStarInitialAngle,
+      planets: sideLevel.planets,
+      walls: sideLevel.walls,
+      availableInventory: sideLevel.availableInventory,
+      presetDevices: sideLevel.presetDevices,
+      creditsReward: 150 + Random().nextInt(100),
+      researchPointsReward: 15 + Random().nextInt(15),
+    );
+
+    return QuestModel(
+      id: uniqueId,
+      title: title,
+      description: "Perform target calibration on simulated orbital relays to secure deep space lanes. ${sideLevel.description}",
+      type: QuestType.side,
+      storyLoreSnippet: "A localized gravity distortion has disrupted navigation vectors. Stabilize the sector targets.",
+      creditsReward: customizedLevel.creditsReward,
+      rpReward: customizedLevel.researchPointsReward,
+      levelData: customizedLevel,
+    );
+  }
+
   // Helper to generate a stable, non-overlapping pseudo-random angle on an orbit path
-  double _getStableQuestAngle(String questId, int index, int total) {
-    final double baseAngle = (2.0 * pi / total) * index;
-    // Jitter coordinates deterministically based on string hash so they look organic but remain static
-    final int hash = questId.codeUnits.fold(0, (prev, char) => prev + char);
-    final double jitter = ((hash % 40) - 20) / 100.0; // Jitter range of -0.20 to +0.20 radians
-    return baseAngle + jitter;
+  double _getStableQuestAngle(String questId, List<double> existingAngles) {
+    if (!_questAngles.containsKey(questId)) {
+      final random = Random();
+      double angle = random.nextDouble() * 2.0 * pi;
+
+      // Try to find a non-overlapping angle (up to 15 attempts)
+      for (int attempt = 0; attempt < 15; attempt++) {
+        bool tooClose = false;
+        for (final extAngle in existingAngles) {
+          final diff = (angle - extAngle).abs();
+          final normDiff = min(diff, 2.0 * pi - diff);
+          if (normDiff < 0.7) { // Enforce ~40 degrees minimum separation
+            tooClose = true;
+            break;
+          }
+        }
+        if (!tooClose) break;
+        angle = random.nextDouble() * 2.0 * pi;
+      }
+
+      _questAngles[questId] = angle;
+    }
+    return _questAngles[questId]!;
   }
 
   @override
@@ -123,15 +217,28 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
             }
           }
 
-          // Side quests: Max 3 active (incomplete) Side quests
-          final sideQuests = galaxy.quests
-              .where((q) => q.type == QuestType.side && !progression.completedQuestIds.contains(q.id))
-              .take(3)
-              .toList();
+          // Side quests: Max 3 active (incomplete) Side quests (refilled dynamically when completed)
+          _initializeSessionSideQuests(galaxy, progression);
+          final sideQuests = _sessionSideQuestsMap?[galaxy.id] ?? const <QuestModel>[];
 
-          // Daily quests: Max 3 active (incomplete) Daily quests (10 max total completions)
+          // Daily quests: Max 3 active (incomplete) Daily quests (10 max total completions, refilled dynamically when completed)
           _initializeSessionDailyQuests(progression);
           final dailyQuests = _sessionDailyQuests ?? const <QuestModel>[];
+
+          // Collect already-computed angles for both orbits to prevent overlapping
+          final List<double> sideAngles = [];
+          for (var q in sideQuests) {
+            if (_questAngles.containsKey(q.id)) {
+              sideAngles.add(_questAngles[q.id]!);
+            }
+          }
+
+          final List<double> dailyAngles = [];
+          for (var q in dailyQuests) {
+            if (_questAngles.containsKey(q.id)) {
+              dailyAngles.add(_questAngles[q.id]!);
+            }
+          }
 
           return SafeArea(
             child: Padding(
@@ -242,7 +349,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                 // B. Active Side Quest Planet Nodes (Orbit 2, Middle)
                                 ...List.generate(sideQuests.length, (idx) {
                                   final quest = sideQuests[idx];
-                                  final theta = _getStableQuestAngle(quest.id, idx, sideQuests.length);
+                                  final theta = _getStableQuestAngle(quest.id, sideAngles);
+                                  if (!sideAngles.contains(theta)) sideAngles.add(theta);
                                   return _buildOrbitingPlanet(
                                     quest: quest,
                                     center: center,
@@ -257,7 +365,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                 // C. Active Daily Quest Planet Nodes (Orbit 3, Outer)
                                 ...List.generate(dailyQuests.length, (idx) {
                                   final quest = dailyQuests[idx];
-                                  final theta = _getStableQuestAngle(quest.id, idx, dailyQuests.length);
+                                  final theta = _getStableQuestAngle(quest.id, dailyAngles);
+                                  if (!dailyAngles.contains(theta)) dailyAngles.add(theta);
                                   return _buildOrbitingPlanet(
                                     quest: quest,
                                     center: center,
@@ -638,9 +747,9 @@ class _SolarSystemPainter extends CustomPainter {
       }
     }
 
-    // 2. Draw concentric dashed vector orbits (Subtle, barely visible at 5% opacity)
+    // 2. Draw concentric dashed vector orbits (Subtle, barely visible at 8% opacity)
     final orbitPaint = Paint()
-      ..color = const Color(0xFF132238).withOpacity(0.05) // 5% opacity
+      ..color = const Color(0xFF00FFF5).withOpacity(0.08) // Cyber Cyan barely visible
       ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
