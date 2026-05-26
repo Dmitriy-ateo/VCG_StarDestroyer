@@ -36,7 +36,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   @override
   void initState() {
     super.initState();
-    // Continuous slow planetary rotation loop (repeats infinitely)
+    // Continuous slow animation ticker to drive dynamic NPC assets and comets
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 40),
@@ -90,6 +90,15 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       rpReward: dailyLevel.researchPointsReward,
       levelData: dailyLevel,
     );
+  }
+
+  // Helper to generate a stable, non-overlapping pseudo-random angle on an orbit path
+  double _getStableQuestAngle(String questId, int index, int total) {
+    final double baseAngle = (2.0 * pi / total) * index;
+    // Jitter coordinates deterministically based on string hash so they look organic but remain static
+    final int hash = questId.codeUnits.fold(0, (prev, char) => prev + char);
+    final double jitter = ((hash % 40) - 20) / 100.0; // Jitter range of -0.20 to +0.20 radians
+    return baseAngle + jitter;
   }
 
   @override
@@ -191,13 +200,9 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
                         final center = Offset(mapWidth / 2.0, mapHeight * 0.42);
 
-                        // Responsive elliptical orbit diameters
-                        final orbitXRadii = [mapWidth * 0.20, mapWidth * 0.35, mapWidth * 0.48];
-                        final orbitYRadii = [mapWidth * 0.15, mapWidth * 0.26, mapWidth * 0.36];
-
-                        // Spacers for Side and Daily planet distributions
-                        final sideAngles = [pi / 4, pi / 4 + (2 * pi / 3), pi / 4 + (4 * pi / 3)];
-                        final dailyAngles = [pi / 6, pi / 6 + (2 * pi / 3), pi / 6 + (4 * pi / 3)];
+                        // Pseudo-3D vertically compressed elliptical orbit track radii
+                        final orbitXRadii = [mapWidth * 0.22, mapWidth * 0.38, mapWidth * 0.49];
+                        final orbitYRadii = [mapWidth * 0.08, mapWidth * 0.14, mapWidth * 0.18];
 
                         return AnimatedBuilder(
                           animation: _animationController,
@@ -206,7 +211,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
                             return Stack(
                               children: [
-                                // 1. Custom Painted orbits & core command Hub
+                                // 1. Deep space vector painter (stellar backdrop + orbits + extra animated NPC ships)
                                 Positioned.fill(
                                   child: RepaintBoundary(
                                     child: CustomPaint(
@@ -214,22 +219,21 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                         center: center,
                                         orbitXRadii: orbitXRadii,
                                         orbitYRadii: orbitYRadii,
+                                        animProgress: animVal,
                                       ),
                                     ),
                                   ),
                                 ),
 
-                                // 2. Interactive Orbiting Planet Nodes
-                                // A. Active Lore Quest Planet Node (Orbit 1, Inner)
+                                // 2. Interactive Orbiting Planet Nodes (Static, stable positioning on tracks)
+                                // A. Active Lore Quest Planet Node (Orbit 1, Inner, placed in front foreground)
                                 if (activeLoreQuest != null)
                                   _buildOrbitingPlanet(
                                     quest: activeLoreQuest,
                                     center: center,
                                     rx: orbitXRadii[0],
                                     ry: orbitYRadii[0],
-                                    theta0: 0.0,
-                                    speedFactor: 1.8,
-                                    animProgress: animVal,
+                                    theta: pi / 2, // Static frontmost
                                     themeColor: const Color(0xFF00FFF5),
                                     icon: Icons.explore,
                                   ),
@@ -237,14 +241,13 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                 // B. Active Side Quest Planet Nodes (Orbit 2, Middle)
                                 ...List.generate(sideQuests.length, (idx) {
                                   final quest = sideQuests[idx];
+                                  final theta = _getStableQuestAngle(quest.id, idx, sideQuests.length);
                                   return _buildOrbitingPlanet(
                                     quest: quest,
                                     center: center,
                                     rx: orbitXRadii[1],
                                     ry: orbitYRadii[1],
-                                    theta0: sideAngles[idx % 3],
-                                    speedFactor: 1.2,
-                                    animProgress: animVal,
+                                    theta: theta,
                                     themeColor: const Color(0xFFFF2E93),
                                     icon: Icons.assignment,
                                   );
@@ -253,14 +256,13 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                 // C. Active Daily Quest Planet Nodes (Orbit 3, Outer)
                                 ...List.generate(dailyQuests.length, (idx) {
                                   final quest = dailyQuests[idx];
+                                  final theta = _getStableQuestAngle(quest.id, idx, dailyQuests.length);
                                   return _buildOrbitingPlanet(
                                     quest: quest,
                                     center: center,
                                     rx: orbitXRadii[2],
                                     ry: orbitYRadii[2],
-                                    theta0: dailyAngles[idx % 3],
-                                    speedFactor: -0.7, // Rotate in opposite direction
-                                    animProgress: animVal,
+                                    theta: theta,
                                     themeColor: const Color(0xFFFFB703),
                                     icon: Icons.track_changes,
                                   );
@@ -295,17 +297,18 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     required Offset center,
     required double rx,
     required double ry,
-    required double theta0,
-    required double speedFactor,
-    required double animProgress,
+    required double theta,
     required Color themeColor,
     required IconData icon,
   }) {
-    // Parametric calculations to find position on the responsive elliptical track
-    final double theta = theta0 + (animProgress * 2 * pi * speedFactor);
+    // Parametric calculations to find position on the compressed elliptical track
     final double px = center.dx + rx * cos(theta);
     final double py = center.dy + ry * sin(theta);
-    const double planetSize = 52.0;
+
+    // Dynamic scale map based on Z-depth (sin(theta) ranges from -1.0 to 1.0)
+    // Planets at the back (sin(theta) < 0) are smaller; foreground planets (sin(theta) > 0) are larger
+    final double depthScale = 0.82 + (sin(theta) * 0.18);
+    final double planetSize = 52.0 * depthScale;
 
     final isSelected = _selectedQuest?.id == quest.id;
 
@@ -313,7 +316,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       left: px - planetSize / 2,
       top: py - planetSize / 2,
       width: planetSize,
-      height: planetSize + 22.0, // extra height for bottom planet label tag
+      height: planetSize + 22.0 * depthScale, // scale label margin as well
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
@@ -339,29 +342,29 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                     boxShadow: [
                       BoxShadow(
                         color: themeColor.withOpacity(isSelected ? 0.35 : 0.12),
-                        blurRadius: isSelected ? 16 : 8,
-                        spreadRadius: isSelected ? 3 : 1,
+                        blurRadius: isSelected ? 16 * depthScale : 8 * depthScale,
+                        spreadRadius: isSelected ? 3 * depthScale : 1 * depthScale,
                       )
                     ],
                     border: Border.all(
                       color: isSelected ? const Color(0xFFFFFFFF) : themeColor.withOpacity(0.3),
-                      width: isSelected ? 1.5 : 1.0,
+                      width: isSelected ? 1.5 * depthScale : 1.0 * depthScale,
                     ),
                   ),
                 ),
 
                 // Core Planet Body
                 Container(
-                  width: planetSize - 10.0,
-                  height: planetSize - 10.0,
+                  width: planetSize - 10.0 * depthScale,
+                  height: planetSize - 10.0 * depthScale,
                   decoration: BoxDecoration(
                     color: const Color(0xFF0B0E14).withOpacity(0.95),
                     shape: BoxShape.circle,
-                    border: Border.all(color: themeColor.withOpacity(0.8), width: 1.5),
+                    border: Border.all(color: themeColor.withOpacity(0.8), width: 1.5 * depthScale),
                   ),
                   child: Icon(
                     icon,
-                    size: 18,
+                    size: 18 * depthScale,
                     color: themeColor,
                   ),
                 ),
@@ -379,7 +382,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                 quest.title.toUpperCase(),
                 style: TextStyle(
                   color: isSelected ? const Color(0xFFFFFFFF) : Colors.grey,
-                  fontSize: 7.5,
+                  fontSize: 7.5 * depthScale,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
@@ -601,19 +604,43 @@ class _SolarSystemPainter extends CustomPainter {
   final Offset center;
   final List<double> orbitXRadii;
   final List<double> orbitYRadii;
+  final double animProgress;
 
   _SolarSystemPainter({
     required this.center,
     required this.orbitXRadii,
     required this.orbitYRadii,
+    required this.animProgress,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Draw concentric dashed vector orbits
+    // 1. Draw static stellar background field cross patterns deterministically
+    for (int i = 0; i < 40; i++) {
+      // Stable coordinate values derived from index i so they never jump on repaint
+      final double sx = (sin(i * 145.67) * 0.5 + 0.5) * size.width;
+      final double sy = (cos(i * 324.89) * 0.5 + 0.5) * size.height;
+      final double starOpacity = (sin(i * 777.0) * 0.5 + 0.5) * 0.45 + 0.05;
+      
+      final starPaint = Paint()
+        ..color = const Color(0xFFE2E8F0).withOpacity(starOpacity)
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(Offset(sx, sy), 0.8, starPaint);
+
+      // Add a slight star flare glow to every fifth star
+      if (i % 5 == 0) {
+        final glowPaint = Paint()
+          ..color = const Color(0xFF00FFF5).withOpacity(starOpacity * 0.25)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+        canvas.drawCircle(Offset(sx, sy), 2.5, glowPaint);
+      }
+    }
+
+    // 2. Draw concentric dashed vector orbits (Subtle, barely visible at 5% opacity)
     final orbitPaint = Paint()
-      ..color = const Color(0xFF132238).withOpacity(0.35)
-      ..strokeWidth = 1.0
+      ..color = const Color(0xFF132238).withOpacity(0.05) // 5% opacity
+      ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
     for (int i = 0; i < orbitXRadii.length; i++) {
@@ -621,11 +648,11 @@ class _SolarSystemPainter extends CustomPainter {
       final ry = orbitYRadii[i];
       final path = Path();
       
-      path.addOval(Rect.fromCenter(center: center, width: rx * 2, height: ry * 2));
+      path.addOval(Rect.fromCenter(center: center, width: rx * 2.0, height: ry * 2.0));
       _drawDashedPath(canvas, path, orbitPaint);
     }
 
-    // 2. Draw glowing central Galaxy Command Core Star (Sun)
+    // 3. Draw central Galaxy Command Core Star (Sun) with tilt shadow
     const double sunRadius = 38.0;
     
     // Core radial solar glow
@@ -655,6 +682,42 @@ class _SolarSystemPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
     canvas.drawCircle(center, sunRadius, sunBorderPaint);
+
+    // 4. Draw extra animated NPC objects (moving scout ships / comets) to keep page alive
+    // NPC 1: Tiny glowing Cyber-Green Scout Drone orbiting core star
+    final double droneAngle = animProgress * 2.0 * pi * 1.5; // Orbit cycle
+    final double ddx = orbitXRadii[1] * 0.9 * cos(droneAngle);
+    final double ddy = orbitYRadii[1] * 0.9 * sin(droneAngle);
+    // Inclined tilt angle (rotated 20 degrees / 0.35 radians)
+    final double droneX = ddx * cos(0.35) - ddy * sin(0.35);
+    final double droneY = ddx * sin(0.35) + ddy * cos(0.35);
+    final Offset dronePos = center + Offset(droneX, droneY);
+
+    final dronePaint = Paint()
+      ..color = const Color(0xFF00FF87)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(dronePos, 2.5, dronePaint);
+
+    final droneGlow = Paint()
+      ..color = const Color(0xFF00FF87).withOpacity(0.4)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+    canvas.drawCircle(dronePos, 6.0, droneGlow);
+
+    // NPC 2: Pulsing Hot-Pink Space Probe orbiting on the outer track in reverse
+    final double probeAngle = animProgress * 2.0 * pi * -0.6; // Reverse orbit
+    final double pdx = orbitXRadii[2] * 0.95 * cos(probeAngle);
+    final double pdy = orbitYRadii[2] * 0.95 * sin(probeAngle);
+    final Offset probePos = center + Offset(pdx, pdy);
+
+    final probePaint = Paint()
+      ..color = const Color(0xFFFF2E93)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(probePos, 2.0, probePaint);
+
+    final probeGlow = Paint()
+      ..color = const Color(0xFFFF2E93).withOpacity(0.35)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+    canvas.drawCircle(probePos, 5.0, probeGlow);
   }
 
   void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
@@ -676,6 +739,7 @@ class _SolarSystemPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _SolarSystemPainter oldDelegate) {
     return oldDelegate.center != center ||
-        oldDelegate.orbitXRadii.length != orbitXRadii.length;
+        oldDelegate.orbitXRadii.length != orbitXRadii.length ||
+        oldDelegate.animProgress != animProgress;
   }
 }
