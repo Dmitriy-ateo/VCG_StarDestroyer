@@ -67,15 +67,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Responsive Header Wrap
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  // Unified One-Row Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
@@ -86,9 +82,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                             "TACTICAL CAMPAIGNS",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 2.0,
+                              letterSpacing: 1.5,
                             ),
                           ),
                         ],
@@ -96,10 +92,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                       
                       // Currency Statuses
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildCurrencyStatus(Icons.monetization_on, "${widget.controller.progression.credits}", Colors.amberAccent),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 10),
                           _buildCurrencyStatus(Icons.science, "${widget.controller.progression.researchPoints} RP", Colors.purpleAccent),
                         ],
                       ),
@@ -344,19 +339,24 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   Widget _buildCurrencyStatus(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 8),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
           Text(
             text,
-            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14),
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

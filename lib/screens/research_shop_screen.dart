@@ -29,15 +29,11 @@ class ResearchShopScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: Column(
                   children: [
-                    // Responsive Header Wrap
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    // Unified One-Row Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
@@ -58,10 +54,9 @@ class ResearchShopScreen extends StatelessWidget {
                         
                         // Currency Statuses
                         Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 10),
                             _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
                           ],
                         ),
@@ -244,17 +239,25 @@ class ResearchShopScreen extends StatelessWidget {
 
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(text, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
