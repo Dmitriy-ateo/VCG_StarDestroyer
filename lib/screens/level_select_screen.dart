@@ -71,30 +71,38 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                            onPressed: widget.onBackToMenu,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            "TACTICAL CAMPAIGNS",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
+                              onPressed: widget.onBackToMenu,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                "TACTICAL CAMPAIGNS",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      
+                      const SizedBox(width: 8),
                       // Currency Statuses
                       Row(
                         children: [
                           _buildCurrencyStatus(Icons.monetization_on, "${widget.controller.progression.credits}", Colors.amberAccent),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           _buildCurrencyStatus(Icons.science, "${widget.controller.progression.researchPoints} RP", Colors.purpleAccent),
                         ],
                       ),
@@ -339,7 +347,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   Widget _buildCurrencyStatus(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
@@ -348,13 +356,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
           Text(
             text,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: 10.5,
               fontWeight: FontWeight.bold,
             ),
           ),
