@@ -112,7 +112,8 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final mapWidth = constraints.maxWidth;
-                        const double segmentH = 220.0;
+                        final double nodeSize = (mapWidth * 0.60).clamp(120.0, 240.0);
+                        final double segmentH = nodeSize * 1.25;
                         final double totalH = segmentH * galaxies.length + 80.0;
                         const double bottomMargin = 40.0;
 
@@ -127,14 +128,9 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
 
                         return SingleChildScrollView(
                           controller: _scrollController,
-                          child: Container(
+                          child: SizedBox(
                             width: mapWidth,
                             height: totalH,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B0E14),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFF132238), width: 1.0),
-                            ),
                             child: Stack(
                               children: [
                                 // 1. Space Grid Background
@@ -167,10 +163,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                   final isCompleted = progression.completedGalaxyIds.contains(galaxy.id);
                                   
                                   return Positioned(
-                                    left: center.dx - 60.0,
-                                    top: center.dy - 60.0,
-                                    width: 120.0,
-                                    height: 120.0,
+                                    left: center.dx - nodeSize / 2,
+                                    top: center.dy - nodeSize / 2,
+                                    width: nodeSize,
+                                    height: nodeSize,
                                     child: GestureDetector(
                                       onTap: () => _showGalaxyTravelModal(context, galaxy, isUnlocked, progression),
                                       child: Stack(
@@ -178,8 +174,8 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                         children: [
                                           // Outer Glowing Halo
                                           Container(
-                                            width: 100,
-                                            height: 100,
+                                            width: nodeSize * 0.85,
+                                            height: nodeSize * 0.85,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               boxShadow: [
@@ -196,8 +192,8 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                           
                                           // Procedural Custom Painted Disk
                                           SizedBox(
-                                            width: 110,
-                                            height: 110,
+                                            width: nodeSize * 0.95,
+                                            height: nodeSize * 0.95,
                                             child: RepaintBoundary(
                                               child: CustomPaint(
                                                 painter: _buildGalaxyPainter(galaxy.id, isUnlocked),
@@ -292,33 +288,33 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
   Widget _buildCenterIconBadge(bool isUnlocked, bool isCompleted) {
     if (isCompleted) {
       return Container(
-        width: 22,
-        height: 22,
+        width: 28,
+        height: 28,
         decoration: const BoxDecoration(
           color: Color(0xFF00FF87),
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.check, color: Color(0xFFFFFFFF), size: 12),
+        child: const Icon(Icons.check, color: Color(0xFFFFFFFF), size: 14),
       );
     }
 
     if (!isUnlocked) {
       return Container(
-        width: 22,
-        height: 22,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           color: const Color(0xFF0B0E14).withOpacity(0.9),
           shape: BoxShape.circle,
           border: Border.all(color: Colors.redAccent, width: 1.0),
         ),
-        child: const Icon(Icons.lock, color: Colors.redAccent, size: 10),
+        child: const Icon(Icons.lock, color: Colors.redAccent, size: 12),
       );
     }
 
     // Active unlocked, show pulsing pointer
     return Container(
-      width: 22,
-      height: 22,
+      width: 28,
+      height: 28,
       decoration: BoxDecoration(
         color: const Color(0xFF00ADB5),
         shape: BoxShape.circle,
@@ -329,7 +325,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
           )
         ],
       ),
-      child: const Icon(Icons.gps_fixed, color: Color(0xFFFFFFFF), size: 12),
+      child: const Icon(Icons.gps_fixed, color: Color(0xFFFFFFFF), size: 14),
     );
   }
 
@@ -738,16 +734,17 @@ class _CoreOutpostPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2.0, size.height / 2.0);
     final coreColor = isUnlocked ? const Color(0xFF00ADB5) : const Color(0xFF556070);
+    final double scale = size.width / 110.0;
 
     // Orbit Ring 1
     final orbitPaint = Paint()
       ..color = coreColor.withOpacity(0.15)
-      ..strokeWidth = 1.0
+      ..strokeWidth = 1.0 * scale
       ..style = PaintingStyle.stroke;
-    canvas.drawCircle(center, 24.0, orbitPaint);
+    canvas.drawCircle(center, 24.0 * scale, orbitPaint);
 
     // Orbit Ring 2
-    canvas.drawCircle(center, 38.0, orbitPaint);
+    canvas.drawCircle(center, 38.0 * scale, orbitPaint);
 
     // Inner Glowing Core
     final corePaint = Paint()
@@ -757,8 +754,8 @@ class _CoreOutpostPainter extends CustomPainter {
           coreColor.withOpacity(0.5),
           Colors.transparent,
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: 18.0));
-    canvas.drawCircle(center, 18.0, corePaint);
+      ).createShader(Rect.fromCircle(center: center, radius: 18.0 * scale));
+    canvas.drawCircle(center, 18.0 * scale, corePaint);
 
     // Mini Orbiting Moons
     final moonPaint = Paint()
@@ -767,11 +764,11 @@ class _CoreOutpostPainter extends CustomPainter {
     
     // Moon 1 on Ring 1 (static coordinates)
     const angle1 = 45 * pi / 180.0;
-    canvas.drawCircle(Offset(center.dx + 24.0 * cos(angle1), center.dy + 24.0 * sin(angle1)), 3.0, moonPaint);
+    canvas.drawCircle(Offset(center.dx + 24.0 * scale * cos(angle1), center.dy + 24.0 * scale * sin(angle1)), 3.0 * scale, moonPaint);
 
     // Moon 2 on Ring 2
     const angle2 = 210 * pi / 180.0;
-    canvas.drawCircle(Offset(center.dx + 38.0 * cos(angle2), center.dy + 38.0 * sin(angle2)), 4.0, moonPaint);
+    canvas.drawCircle(Offset(center.dx + 38.0 * scale * cos(angle2), center.dy + 38.0 * scale * sin(angle2)), 4.0 * scale, moonPaint);
   }
 
   @override
@@ -788,6 +785,7 @@ class _NebularDepthsPainter extends CustomPainter {
     final center = Offset(size.width / 2.0, size.height / 2.0);
     final baseColor = isUnlocked ? const Color(0xFFFF2E93) : const Color(0xFF556070);
     final secondaryColor = isUnlocked ? const Color(0xFF00FFF5) : const Color(0xFF3A4454);
+    final double scale = size.width / 110.0;
 
     // Draw central disk glow
     final glowPaint = Paint()
@@ -796,8 +794,8 @@ class _NebularDepthsPainter extends CustomPainter {
           baseColor.withOpacity(0.5),
           Colors.transparent,
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: 24.0));
-    canvas.drawCircle(center, 24.0, glowPaint);
+      ).createShader(Rect.fromCircle(center: center, radius: 24.0 * scale));
+    canvas.drawCircle(center, 24.0 * scale, glowPaint);
 
     // Draw Logarithmic Spiral arms
     final dotPaint = Paint()
@@ -808,7 +806,7 @@ class _NebularDepthsPainter extends CustomPainter {
       
       // Plot dots along logarithmic spiral: r = a * e^(b * theta)
       for (double theta = 0; theta < 4.5; theta += 0.15) {
-        final double r = 6.0 + 7.5 * theta;
+        final double r = (6.0 + 7.5 * theta) * scale;
         if (r > size.width / 2.1) break;
 
         final double x = center.dx + r * cos(theta + startAngleOffset);
@@ -818,7 +816,7 @@ class _NebularDepthsPainter extends CustomPainter {
         final color = Color.lerp(baseColor, secondaryColor, theta / 4.5)!;
         dotPaint.color = color.withOpacity((1.0 - (theta / 5.5)).clamp(0.1, 0.95));
 
-        canvas.drawCircle(Offset(x, y), max(1.2, 3.5 - (theta * 0.4)), dotPaint);
+        canvas.drawCircle(Offset(x, y), max(1.2 * scale, (3.5 - (theta * 0.4)) * scale), dotPaint);
       }
     }
   }
@@ -836,6 +834,7 @@ class _OuterHorizonPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2.0, size.height / 2.0);
     final themeColor = isUnlocked ? const Color(0xFFFFB703) : const Color(0xFF556070);
+    final double scale = size.width / 110.0;
 
     // Accretion Ring glow (large, faint oval/disk)
     final ringPaint = Paint()
@@ -845,18 +844,18 @@ class _OuterHorizonPainter extends CustomPainter {
           themeColor.withOpacity(0.15),
           Colors.transparent,
         ],
-      ).createShader(Rect.fromCircle(center: center, radius: 46.0));
-    canvas.drawCircle(center, 46.0, ringPaint);
+      ).createShader(Rect.fromCircle(center: center, radius: 46.0 * scale));
+    canvas.drawCircle(center, 46.0 * scale, ringPaint);
 
     // Warped Gravitational Accretion Disk (horizontal-leaning vector ring)
     final warpedPaint = Paint()
       ..color = themeColor.withOpacity(isUnlocked ? 0.75 : 0.3)
-      ..strokeWidth = 3.5
+      ..strokeWidth = 3.5 * scale
       ..style = PaintingStyle.stroke;
     
     // Draw an elliptical warped vector ring
     canvas.drawOval(
-      Rect.fromCenter(center: center, width: 78.0, height: 26.0),
+      Rect.fromCenter(center: center, width: 78.0 * scale, height: 26.0 * scale),
       warpedPaint,
     );
 
@@ -864,14 +863,14 @@ class _OuterHorizonPainter extends CustomPainter {
     final blackHolePaint = Paint()
       ..color = const Color(0xFF0B0E14)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 12.0, blackHolePaint);
+    canvas.drawCircle(center, 12.0 * scale, blackHolePaint);
 
     // Glowing border around black hole
     final borderPaint = Paint()
       ..color = themeColor.withOpacity(isUnlocked ? 0.95 : 0.4)
-      ..strokeWidth = 1.5
+      ..strokeWidth = 1.5 * scale
       ..style = PaintingStyle.stroke;
-    canvas.drawCircle(center, 12.0, borderPaint);
+    canvas.drawCircle(center, 12.0 * scale, borderPaint);
   }
 
   @override
