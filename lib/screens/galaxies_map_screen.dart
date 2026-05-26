@@ -71,7 +71,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                           const Text(
                             "GALACTIC COMMAND",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: const Color(0xFFFFFFFF),
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.5,
@@ -139,18 +139,22 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                               children: [
                                 // 1. Space Grid Background
                                 Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _CosmicGridPainter(),
+                                  child: RepaintBoundary(
+                                    child: CustomPaint(
+                                      painter: _CosmicGridPainter(),
+                                    ),
                                   ),
                                 ),
 
                                 // 2. Connecting Snake Dotted Path Line
                                 Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: _SnakePathPainter(
-                                      centers: centers,
-                                      completedGalaxyIds: progression.completedGalaxyIds,
-                                      galaxies: galaxies,
+                                  child: RepaintBoundary(
+                                    child: CustomPaint(
+                                      painter: _SnakePathPainter(
+                                        centers: centers,
+                                        completedGalaxyIds: progression.completedGalaxyIds,
+                                        galaxies: galaxies,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -194,8 +198,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                           SizedBox(
                                             width: 110,
                                             height: 110,
-                                            child: CustomPaint(
-                                              painter: _buildGalaxyPainter(galaxy.id, isUnlocked),
+                                            child: RepaintBoundary(
+                                              child: CustomPaint(
+                                                painter: _buildGalaxyPainter(galaxy.id, isUnlocked),
+                                              ),
                                             ),
                                           ),
 
@@ -220,7 +226,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                               child: Text(
                                                 galaxy.name.toUpperCase(),
                                                 style: TextStyle(
-                                                  color: isUnlocked ? Colors.white : Colors.grey,
+                                                  color: isUnlocked ? const Color(0xFFFFFFFF) : Colors.grey,
                                                   fontSize: 8,
                                                   fontWeight: FontWeight.bold,
                                                   letterSpacing: 0.5,
@@ -289,10 +295,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
         width: 22,
         height: 22,
         decoration: const BoxDecoration(
-          color: Colors.green,
+          color: Color(0xFF00FF87),
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.check, color: Colors.white, size: 12),
+        child: const Icon(Icons.check, color: Color(0xFFFFFFFF), size: 12),
       );
     }
 
@@ -323,7 +329,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
           )
         ],
       ),
-      child: const Icon(Icons.gps_fixed, color: Colors.white, size: 12),
+      child: const Icon(Icons.gps_fixed, color: Color(0xFFFFFFFF), size: 12),
     );
   }
 
@@ -354,7 +360,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                   child: Text(
                     galaxy.name.toUpperCase(),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFFFFFFFF),
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
@@ -445,7 +451,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00ADB5),
                   disabledBackgroundColor: const Color(0xFF222831),
-                  foregroundColor: Colors.white,
+                  foregroundColor: const Color(0xFFFFFFFF),
                   disabledForegroundColor: Colors.grey.withOpacity(0.4),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
