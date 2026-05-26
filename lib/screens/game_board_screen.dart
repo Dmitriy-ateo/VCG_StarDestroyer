@@ -755,11 +755,18 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildRewardMetric(Icons.monetization_on, "+${widget.controller.currentLevel.creditsReward}", Colors.amberAccent),
+                    _buildRewardMetric(Icons.monetization_on, "+${widget.controller.creditsEarned}", Colors.amberAccent),
                     const SizedBox(width: 24),
-                    _buildRewardMetric(Icons.science, "+${widget.controller.currentLevel.researchPointsReward} RP", Colors.purpleAccent),
+                    _buildRewardMetric(Icons.science, "+${widget.controller.researchPointsEarned} RP", Colors.purpleAccent),
                   ],
                 ),
+                if (widget.controller.creditsEarned == 0) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    "(Sector already cleared: repeat rewards offline)",
+                    style: TextStyle(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic),
+                  ),
+                ],
                 const SizedBox(height: 28),
               ],
               

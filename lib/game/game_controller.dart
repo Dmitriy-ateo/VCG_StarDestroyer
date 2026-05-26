@@ -19,6 +19,10 @@ class GameController extends ChangeNotifier {
   // Active Level State
   late LevelData currentLevel;
   PlayState playState = PlayState.editing;
+
+  // Active Level Rewards Earned
+  int creditsEarned = 0;
+  int researchPointsEarned = 0;
   
   // Placed and inventory devices
   List<DeviceModel> placedDevices = [];
@@ -56,6 +60,8 @@ class GameController extends ChangeNotifier {
     animationProgress = 0.0;
     selectedInventoryDevice = null;
     placedDevices = [];
+    creditsEarned = 0;
+    researchPointsEarned = 0;
 
     // Initialize inventory from level data templates
     inventory = [];
@@ -270,12 +276,24 @@ class GameController extends ChangeNotifier {
     if (traceResult != null) {
       if (traceResult!.success) {
         playState = PlayState.victory;
-        // Credit rewards
-        progression.credits += currentLevel.creditsReward;
-        progression.researchPoints += currentLevel.researchPointsReward;
-        progression.completedLevelIds.add(currentLevel.id);
+        
+        final alreadyCompleted = progression.completedLevelIds.contains(currentLevel.id);
+        if (!alreadyCompleted) {
+          // Credits and RP rewards reduced by 10x
+          creditsEarned = currentLevel.creditsReward ~/ 10;
+          researchPointsEarned = currentLevel.researchPointsReward ~/ 10;
+          
+          progression.credits += creditsEarned;
+          progression.researchPoints += researchPointsEarned;
+          progression.completedLevelIds.add(currentLevel.id);
+        } else {
+          creditsEarned = 0;
+          researchPointsEarned = 0;
+        }
       } else {
         playState = PlayState.defeat;
+        creditsEarned = 0;
+        researchPointsEarned = 0;
       }
       notifyListeners();
     }

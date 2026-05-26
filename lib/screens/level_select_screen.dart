@@ -297,9 +297,29 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                                         ),
                                         Row(
                                           children: [
-                                            _buildSmallStatChip(Icons.monetization_on, "+${level.creditsReward}", Colors.amberAccent),
-                                            const SizedBox(width: 10),
-                                            _buildSmallStatChip(Icons.science, "+${level.researchPointsReward} RP", Colors.purpleAccent),
+                                            if (completed.contains(level.id)) ...[
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.greenAccent.withOpacity(0.08),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: Colors.greenAccent.withOpacity(0.3), width: 0.8),
+                                                ),
+                                                child: const Text(
+                                                  "✓ CLAIMED",
+                                                  style: TextStyle(
+                                                    color: Colors.greenAccent,
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: 0.5,
+                                                  ),
+                                                ),
+                                              ),
+                                            ] else ...[
+                                              _buildSmallStatChip(Icons.monetization_on, "+${level.creditsReward ~/ 10}", Colors.amberAccent),
+                                              const SizedBox(width: 10),
+                                              _buildSmallStatChip(Icons.science, "+${level.researchPointsReward ~/ 10} RP", Colors.purpleAccent),
+                                            ],
                                           ],
                                         ),
                                       ],
