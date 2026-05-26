@@ -245,11 +245,12 @@ class BoardPainter extends CustomPainter {
       for (var path in previewResult.paths) {
         if (path.isEmpty) continue;
         
-        // Calculate dynamic maximum preview points based on level (10% per level)
+        // Calculate dynamic maximum preview points based on level (10% of maximum board height per level)
+        // Maximum board height is 12.0 grid units. With stepSize = 0.05, total steps = 12.0 / 0.05 = 240.
         final double percentage = aimingComputerLevel * 0.1;
-        final int maxPreviewPoints = (path.length * percentage).toInt();
+        final int maxAllowedPoints = (percentage * 240).toInt();
 
-        final renderLength = min(path.length, maxPreviewPoints);
+        final renderLength = min(path.length, maxAllowedPoints);
         final pathObj = Path();
         pathObj.moveTo(toPixels(path[0].dx, path[0].dy).dx, toPixels(path[0].dx, path[0].dy).dy); // fix coord below
         
