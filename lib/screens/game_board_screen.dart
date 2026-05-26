@@ -84,17 +84,9 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                     curve: Curves.easeInOutCubic,
                     left: 12,
                     right: 12,
-                    bottom: _isInventoryOpen ? 66 : -220,
+                    bottom: _isInventoryOpen ? 88 : -220,
                     height: 175,
                     child: _buildGlassmorphicDrawer(),
-                  ),
-
-                // 6. High-Tech Floating Toolbox FAB
-                if (state == PlayState.editing && widget.controller.inventory.isNotEmpty)
-                  Positioned(
-                    right: 16,
-                    bottom: 76,
-                    child: _buildToolboxFAB(),
                   ),
 
                 // 7. Floating Overlay States (Victory/Defeat Dialog Modals)
@@ -369,30 +361,29 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildToolboxFAB() {
+  Widget _buildBottomToolboxButton() {
     final hasSelection = widget.controller.selectedInventoryDevice != null;
     return Container(
-      width: 56,
-      height: 56,
+      width: 50,
+      height: 50,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF111424),
+        color: const Color(0xFF161B22),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: hasSelection ? const Color(0xFFFF2E93) : const Color(0xFF00FFF5),
-          width: 2.0,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: (hasSelection ? const Color(0xFFFF2E93) : const Color(0xFF00FFF5)).withOpacity(0.3),
-            blurRadius: 12,
-            spreadRadius: 1,
+            color: (hasSelection ? const Color(0xFFFF2E93) : const Color(0xFF00FFF5)).withOpacity(0.15),
+            blurRadius: 8,
           )
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          customBorder: const CircleBorder(),
+          borderRadius: BorderRadius.circular(10.5),
           onTap: () {
             setState(() {
               _isInventoryOpen = !_isInventoryOpen;
@@ -402,7 +393,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
           child: Icon(
             _isInventoryOpen ? Icons.close : (hasSelection ? Icons.playlist_add_check : Icons.construction),
             color: hasSelection ? const Color(0xFFFF2E93) : const Color(0xFF00FFF5),
-            size: 26,
+            size: 22,
           ),
         ),
       ),
@@ -618,62 +609,71 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: isEditing
-              ? ElevatedButton(
-                  onPressed: widget.controller.fireLaser,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF2E93),
-                    foregroundColor: Colors.white,
-                    elevation: 8,
-                    shadowColor: const Color(0xFFFF2E93).withOpacity(0.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: Colors.white, width: 1.5),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.flash_on, size: 22, color: Colors.white),
-                      SizedBox(width: 10),
-                      Text(
-                        "FIRE SUPERLASER",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          letterSpacing: 2.0,
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 50,
+                child: isEditing
+                    ? ElevatedButton(
+                        onPressed: widget.controller.fireLaser,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF2E93),
+                          foregroundColor: Colors.white,
+                          elevation: 8,
+                          shadowColor: const Color(0xFFFF2E93).withOpacity(0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Colors.white, width: 1.5),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.flash_on, size: 22, color: Colors.white),
+                            SizedBox(width: 10),
+                            Text(
+                              "FIRE SUPERLASER",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : OutlinedButton(
+                        onPressed: widget.controller.resetLaser,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF00FFF5),
+                          side: const BorderSide(color: Color(0xFF00FFF5), width: 2.0),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: const Color(0xFF00FFF5).withOpacity(0.05),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.refresh, size: 20),
+                            SizedBox(width: 10),
+                            Text(
+                              "RESET CONSOLE",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                )
-              : OutlinedButton(
-                  onPressed: widget.controller.resetLaser,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF00FFF5),
-                    side: const BorderSide(color: Color(0xFF00FFF5), width: 2.0),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: const Color(0xFF00FFF5).withOpacity(0.05),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.refresh, size: 20),
-                      SizedBox(width: 10),
-                      Text(
-                        "RESET CONSOLE",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              ),
+            ),
+            if (isEditing && widget.controller.inventory.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              _buildBottomToolboxButton(),
+            ],
+          ],
         ),
       ),
     );
