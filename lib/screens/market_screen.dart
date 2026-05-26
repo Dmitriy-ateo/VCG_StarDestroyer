@@ -108,30 +108,38 @@ class MarketScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Color(0xFF00FFF5)),
-                            onPressed: onBackToMenu,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            "TACTICAL MARKET",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Color(0xFF00FFF5)),
+                              onPressed: onBackToMenu,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                "TACTICAL MARKET",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      
+                      const SizedBox(width: 8),
                       // Currency statuses
                       Row(
                         children: [
                           _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
                         ],
                       ),
@@ -220,18 +228,22 @@ class MarketScreen extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(
-                                          item.name,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                                        Expanded(
+                                          child: Text(
+                                            item.name,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13.5,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        if (ownedCount > 0)
+                                        if (ownedCount > 0) ...[
+                                          const SizedBox(width: 6),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                             decoration: BoxDecoration(
                                               color: Colors.greenAccent.withOpacity(0.15),
                                               borderRadius: BorderRadius.circular(4),
@@ -246,6 +258,7 @@ class MarketScreen extends StatelessWidget {
                                               ),
                                             ),
                                           ),
+                                        ],
                                       ],
                                     ),
                                     const SizedBox(height: 6),
@@ -355,7 +368,7 @@ class MarketScreen extends StatelessWidget {
 
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
@@ -364,13 +377,13 @@ class MarketScreen extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
           Text(
             text,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: 10.5,
               fontWeight: FontWeight.bold,
             ),
           ),
