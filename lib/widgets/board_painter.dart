@@ -268,6 +268,38 @@ class BoardPainter extends CustomPainter {
     for (var dev in allDevices) {
       if (!dev.isPlaced) continue;
       final center = cellCenter(dev.gridX, dev.gridY);
+      
+      final isBombExploded = dev.type == DeviceType.bomb &&
+          traceResult != null &&
+          playState != PlayState.editing &&
+          traceResult!.explosions.any((exp) =>
+              exp.targetId == dev.id &&
+              animationProgress * LaserCalculator.maxSteps >= exp.stepIndex);
+
+      if (isBombExploded) {
+        // Render shockwave expansion cloud instead of bomb hull
+        final exp = traceResult!.explosions.firstWhere((e) => e.targetId == dev.id);
+        final currentStep = animationProgress * LaserCalculator.maxSteps;
+        final elapsed = currentStep - exp.stepIndex;
+        
+        if (elapsed >= 0 && elapsed < 40) {
+          final progress = elapsed / 40.0;
+          final expRadius = (scale * 0.4) + (exp.radius * scale * 1.3) * progress;
+          
+          final expPaint = Paint()
+            ..color = const Color(0xFFFF2E93).withOpacity(0.8 * (1.0 - progress))
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, scale * 0.08);
+            
+          canvas.drawCircle(center, expRadius, expPaint);
+          
+          final corePaint = Paint()
+            ..color = Colors.white.withOpacity(1.0 - progress)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, scale * 0.04);
+          canvas.drawCircle(center, expRadius * 0.4, corePaint);
+        }
+        continue; // Skip normal bomb icon painting
+      }
+
       _drawDevice(canvas, dev, center, scale, cellW, cellH);
     }
 
