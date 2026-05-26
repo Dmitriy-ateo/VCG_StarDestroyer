@@ -474,113 +474,115 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
           )
         ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          // Drawer Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFF111424),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.inventory_2_outlined, color: Color(0xFF00FFF5), size: 14),
-                    SizedBox(width: 8),
-                    Text(
-                      "DEVICE BLUEPRINTS",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18.5), // Inner radius aligned with the 1.5px border
+        child: Column(
+          children: [
+            // Drawer Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFF111424),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.inventory_2_outlined, color: Color(0xFF00FFF5), size: 14),
+                      SizedBox(width: 8),
+                      Text(
+                        "DEVICE BLUEPRINTS",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                Text(
-                  "${availableItems.length} AVAILABLE",
-                  style: const TextStyle(
-                    color: Color(0xFF00ADB5),
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          
-          // List of available blueprints
-          Expanded(
-            child: availableItems.isEmpty
-                ? const Center(
-                    child: Text(
-                      "ALL BLUEPRINTS PLACED",
-                      style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
+                  Text(
+                    "${availableItems.length} AVAILABLE",
+                    style: const TextStyle(
+                      color: Color(0xFF00ADB5),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
                     ),
-                  )
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    itemCount: availableItems.length,
-                    itemBuilder: (context, index) {
-                      final item = availableItems[index];
-                      final isSelected = widget.controller.selectedInventoryDevice?.id == item.id;
+                  ),
+                ],
+              ),
+            ),
+            
+            // List of available blueprints
+            Expanded(
+              child: availableItems.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "ALL BLUEPRINTS PLACED",
+                        style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      itemCount: availableItems.length,
+                      itemBuilder: (context, index) {
+                        final item = availableItems[index];
+                        final isSelected = widget.controller.selectedInventoryDevice?.id == item.id;
 
-                      return GestureDetector(
-                        onTap: () {
-                          if (isSelected) {
-                            widget.controller.selectInventoryDevice(null);
-                          } else {
-                            widget.controller.selectInventoryDevice(item);
-                            setState(() {
-                              _isInventoryOpen = false;
-                            });
-                          }
-                          HapticFeedback.selectionClick();
-                        },
-                        child: Container(
-                          width: 100,
-                          margin: const EdgeInsets.only(right: 12),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFFFF2E93).withOpacity(0.15)
-                                : const Color(0xFF161B22),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected ? const Color(0xFFFF2E93) : const Color(0xFF393E46),
-                              width: 1.5,
+                        return GestureDetector(
+                          onTap: () {
+                            if (isSelected) {
+                              widget.controller.selectInventoryDevice(null);
+                            } else {
+                              widget.controller.selectInventoryDevice(item);
+                              setState(() {
+                                _isInventoryOpen = false;
+                              });
+                            }
+                            HapticFeedback.selectionClick();
+                          },
+                          child: Container(
+                            width: 100,
+                            margin: const EdgeInsets.only(right: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFFFF2E93).withOpacity(0.15)
+                                  : const Color(0xFF161B22),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected ? const Color(0xFFFF2E93) : const Color(0xFF393E46),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildDeviceIcon(item.type, item.splitAngleDegrees),
+                                const SizedBox(height: 8),
+                                Text(
+                                  item.type == DeviceType.splitter && item.splitAngleDegrees != null
+                                      ? "SPLIT ${item.splitAngleDegrees!.toStringAsFixed(0)}°"
+                                      : item.type.name.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildDeviceIcon(item.type, item.splitAngleDegrees),
-                              const SizedBox(height: 8),
-                              Text(
-                                item.type == DeviceType.splitter && item.splitAngleDegrees != null
-                                    ? "SPLIT ${item.splitAngleDegrees!.toStringAsFixed(0)}°"
-                                    : item.type.name.toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
