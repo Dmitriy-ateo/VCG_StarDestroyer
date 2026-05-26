@@ -7,6 +7,8 @@ class GameProgression {
   Set<DeviceType> unlockedDevices;
   Set<double> unlockedSplitterAngles; // Tracks unlocked splitter angle variants
   Map<String, int> purchasedMarketDevices; // Tracks purchased extra items
+  Set<String> completedGalaxyIds; // Tracks unlocked/completed galaxies
+  Set<String> completedQuestIds; // Tracks cleared campaign quests
   
   // Upgrades
   int laserIntensityLevel; // 1 to 5
@@ -20,12 +22,16 @@ class GameProgression {
     Set<DeviceType>? unlockedDevices,
     Set<double>? unlockedSplitterAngles,
     Map<String, int>? purchasedMarketDevices,
+    Set<String>? completedGalaxyIds,
+    Set<String>? completedQuestIds,
     this.laserIntensityLevel = 1,
     this.aimingComputerLevel = 1, // Start with aiming preview enabled level 1
     this.chassisCapacityLevel = 1,
   })  : completedLevelIds = completedLevelIds ?? {},
         unlockedDevices = unlockedDevices ?? {DeviceType.reflector},
         unlockedSplitterAngles = unlockedSplitterAngles ?? {180.0},
+        completedGalaxyIds = completedGalaxyIds ?? {},
+        completedQuestIds = completedQuestIds ?? {},
         purchasedMarketDevices = purchasedMarketDevices ?? {
           'reflector': 0,
           'bomb': 0,
@@ -46,6 +52,8 @@ class GameProgression {
       unlockedDevices: Set.from(unlockedDevices),
       unlockedSplitterAngles: Set.from(unlockedSplitterAngles),
       purchasedMarketDevices: Map.from(purchasedMarketDevices),
+      completedGalaxyIds: Set.from(completedGalaxyIds),
+      completedQuestIds: Set.from(completedQuestIds),
       laserIntensityLevel: laserIntensityLevel,
       aimingComputerLevel: aimingComputerLevel,
       chassisCapacityLevel: chassisCapacityLevel,
