@@ -870,7 +870,16 @@ class BoardPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+  bool shouldRepaint(covariant BoardPainter oldDelegate) {
+    return oldDelegate.level != level ||
+        oldDelegate.placedDevices != placedDevices ||
+        oldDelegate.aimingAngle != aimingAngle ||
+        oldDelegate.playState != playState ||
+        oldDelegate.traceResult != traceResult ||
+        oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.aimingComputerLevel != aimingComputerLevel ||
+        oldDelegate.selectedInventoryDevice != selectedInventoryDevice ||
+        oldDelegate.bgAnimationValue != bgAnimationValue ||
+        oldDelegate.aimAnimationValue != aimAnimationValue;
   }
 }
