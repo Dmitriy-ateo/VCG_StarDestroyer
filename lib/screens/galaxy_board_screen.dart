@@ -200,9 +200,10 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
                         final center = Offset(mapWidth / 2.0, mapHeight * 0.42);
 
-                        // Pseudo-3D vertically compressed elliptical orbit track radii
-                        final orbitXRadii = [mapWidth * 0.22, mapWidth * 0.38, mapWidth * 0.49];
-                        final orbitYRadii = [mapWidth * 0.08, mapWidth * 0.14, mapWidth * 0.18];
+                        // Pseudo-3D vertically compressed elliptical orbit track radii (responsive horizontal bounds safe)
+                        final double maxRadiusX = mapWidth / 2.0 - 36.0;
+                        final orbitXRadii = [maxRadiusX * 0.42, maxRadiusX * 0.73, maxRadiusX * 1.00];
+                        final orbitYRadii = [orbitXRadii[0] * 0.35, orbitXRadii[1] * 0.35, orbitXRadii[2] * 0.35];
 
                         return AnimatedBuilder(
                           animation: _animationController,
