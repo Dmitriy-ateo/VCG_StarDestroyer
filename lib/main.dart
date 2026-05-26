@@ -93,7 +93,7 @@ class _GameRouterState extends State<GameRouter> {
         return GameBoardScreen(
           controller: _controller,
           onBackToMenu: () => _navigateTo('select'),
-          onGoToShop: () => _navigateTo('shop'),
+          onGoToShop: () => _navigateTo('market'),
         );
       case 'shop':
         return ResearchShopScreen(
