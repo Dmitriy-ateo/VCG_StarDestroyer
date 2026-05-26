@@ -204,6 +204,7 @@ final List<LevelData> preloadedLevels = [
     walls: [
       WallBlock(gridX: 2, gridY: 5),
       WallBlock(gridX: 3, gridY: 5),
+      WallBlock(gridX: 4, gridY: 5),
     ],
     availableInventory: [
       DeviceModel(id: "t_well1", type: DeviceType.gravityWell),
