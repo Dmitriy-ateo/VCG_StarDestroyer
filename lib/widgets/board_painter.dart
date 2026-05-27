@@ -317,38 +317,198 @@ class BoardPainter extends CustomPainter {
       } else if (wall.type == 'spaceLitter') {
         // Space Debris / Trash look (Weakest obstacle, several items in a cell with NO borders)
         final isPenetrated = wall.requiredLaserPower != null && laserIntensity >= wall.requiredLaserPower!;
-        final baseColor = isPenetrated ? const Color(0xFF00FF87).withOpacity(0.2) : const Color(0xFF00FF87);
+        final baseOpacity = isPenetrated ? 0.15 : 0.75 * wallOpacity;
 
-        // Draw multiple random messy floating debris shards/particles inside with NO outline/background container
-        final shardPaint = Paint()
-          ..color = baseColor.withOpacity(isPenetrated ? 0.15 : 0.75 * wallOpacity)
-          ..style = PaintingStyle.fill;
+        // Config for 4 distinct debris shards orbiting
+        final shardSizes = [scale * 0.08, scale * 0.055, scale * 0.075, scale * 0.065];
+        final phaseOffsets = [0.0, pi * 0.5 + 0.25, pi + 0.5, pi * 1.5 + 0.15];
+        final orbitRadiiX = [cellW * 0.28, cellW * 0.22, cellW * 0.32, cellW * 0.20];
+        final orbitRadiiY = [cellH * 0.16, cellH * 0.12, cellH * 0.18, cellH * 0.11];
+        final spinSpeeds = [1.2, -2.0, 2.6, -1.5];
+        const tiltAngle = -0.436; // -25 degrees in radians for orbit tilt
 
-        // Draw 5 scattered geometric space-dust/debris shapes
-        // 1. Top Left circular piece
-        canvas.drawCircle(Offset(-cellW * 0.28, -cellH * 0.24), scale * 0.024, shardPaint);
-        
-        // 2. Top Right tiny piece
-        canvas.drawCircle(Offset(cellW * 0.24, -cellH * 0.18), scale * 0.016, shardPaint);
-        
-        // 3. Middle Left small fragment
-        canvas.drawCircle(Offset(-cellW * 0.20, cellH * 0.04), scale * 0.012, shardPaint);
+        // We will compute the 3D depth (Z-value) of each shard to sort them
+        final shards = <Map<String, dynamic>>[];
+        for (int i = 0; i < 4; i++) {
+          final orbitAngle = (bgAnimationValue * 2 * pi) + phaseOffsets[i];
+          
+          // Tilted elliptical orbit coordinates:
+          // x = Rx * cos(theta) * cos(tilt) - Ry * sin(theta) * sin(tilt)
+          // y = Rx * cos(theta) * sin(tilt) + Ry * sin(theta) * cos(tilt)
+          final cosTheta = cos(orbitAngle);
+          final sinTheta = sin(orbitAngle);
+          final cosTilt = cos(tiltAngle);
+          final sinTilt = sin(tiltAngle);
 
-        // 4. Center-Bottom triangular piece
-        final path1 = Path()
-          ..moveTo(-cellW * 0.15, cellH * 0.22)
-          ..lineTo(cellW * 0.12, cellH * 0.14)
-          ..lineTo(-cellW * 0.02, cellH * 0.32)
-          ..close();
-        canvas.drawPath(path1, shardPaint);
+          final rx = orbitRadiiX[i];
+          final ry = orbitRadiiY[i];
 
-        // 5. Right-Bottom tiny rectangular shard
-        final path2 = Path()
-          ..moveTo(cellW * 0.18, cellH * 0.16)
-          ..lineTo(cellW * 0.32, cellH * 0.08)
-          ..lineTo(cellW * 0.26, cellH * 0.24)
-          ..close();
-        canvas.drawPath(path2, shardPaint);
+          final x = rx * cosTheta * cosTilt - ry * sinTheta * sinTilt;
+          final y = rx * cosTheta * sinTilt + ry * sinTheta * cosTilt;
+
+          // The depth Z. sinTheta represents back-to-front projection
+          final z = sinTheta; // range [-1.0, 1.0]
+
+          shards.add({
+            'index': i,
+            'offset': Offset(x, y),
+            'z': z,
+            'size': shardSizes[i],
+            'spinSpeed': spinSpeeds[i],
+          });
+        }
+
+        // Sort shards from back to front (Z ascending, so lower Z drawn first)
+        shards.sort((a, b) => (a['z'] as double).compareTo(b['z'] as double));
+
+        // Render each sorted shard
+        for (final shard in shards) {
+          final int idx = shard['index'] as int;
+          final Offset offset = shard['offset'] as Offset;
+          final double zDepth = shard['z'] as double;
+          final double baseSize = shard['size'] as double;
+          final double spinSpeed = shard['spinSpeed'] as double;
+
+          // Scale and opacity based on depth
+          // zDepth is in [-1.0, 1.0]
+          final depthScale = 0.65 + 0.35 * ((zDepth + 1.0) / 2.0); // range [0.65, 1.0]
+          final depthOpacity = 0.50 + 0.50 * ((zDepth + 1.0) / 2.0); // range [0.5, 1.0]
+          final finalOpacity = baseOpacity * depthOpacity;
+          final size = baseSize * depthScale;
+
+          // 3D Lighting setup (Light from top-left-front)
+          const lx = -0.577;
+          const ly = -0.577;
+          const lz = 0.577;
+
+          // Facet shading colors
+          final Color lightColor = const Color(0xFF6EFEB3).withOpacity(finalOpacity);
+          final Color darkColor = const Color(0xFF004D25).withOpacity(finalOpacity);
+
+          // Local spin angle around Y-axis
+          final spin = (bgAnimationValue * 2 * pi * spinSpeed) + (idx * 1.7);
+
+          // Build irregular 3D octahedron vertices
+          // 6 base vertices:
+          // 0: top, 1: bottom, 2: right, 3: back, 4: left, 5: front
+          final baseVertices = [
+            const _Offset3D(0.0, -1.2, 0.0), // top
+            const _Offset3D(0.0, 1.2, 0.0),  // bottom
+            const _Offset3D(1.0, 0.0, 0.0),  // right
+            const _Offset3D(0.0, 0.0, -1.0), // back
+            const _Offset3D(-1.0, 0.0, 0.0), // left
+            const _Offset3D(0.0, 0.0, 1.0),  // front
+          ];
+
+          // Deterministic vertex perturbation based on index, grid coords, etc.
+          double getNoise(int vIdx, int coordIdx) {
+            final hash = (idx * 59 + vIdx * 37 + coordIdx * 17 + wall.gridX * 13 + wall.gridY * 31) % 100;
+            return -0.22 + (hash / 100.0) * 0.44;
+          }
+
+          final rotatedVertices = <Offset>[];
+          final rotated3D = <_Offset3D>[];
+
+          for (int v = 0; v < 6; v++) {
+            final bv = baseVertices[v];
+            // Apply unique noise perturbation to make each shard asymmetrical
+            final px = (bv.x + getNoise(v, 0)) * size;
+            final py = (bv.y + getNoise(v, 1)) * size;
+            final pz = (bv.z + getNoise(v, 2)) * size;
+
+            // Rotate around vertical Y-axis (spin)
+            final cosS = cos(spin);
+            final sinS = sin(spin);
+            final rx = px * cosS - pz * sinS;
+            final ry = py;
+            final rz = px * sinS + pz * cosS;
+
+            // Apply static tilt around X-axis for organic orientation (15 degrees)
+            const cosT = 0.966;
+            const sinT = 0.259;
+
+            final tx = rx;
+            final ty = ry * cosT - rz * sinT;
+            final tz = ry * sinT + rz * cosT;
+
+            // Offset by shard's orbit position and add to lists
+            rotatedVertices.add(Offset(tx + offset.dx, ty + offset.dy));
+            rotated3D.add(_Offset3D(tx, ty, tz));
+          }
+
+          // Octahedron faces winding orders (front faces normal has positive Z)
+          const faces = [
+            [0, 2, 5], // Top-Right-Front
+            [0, 5, 4], // Top-Front-Left
+            [0, 4, 3], // Top-Left-Back
+            [0, 3, 2], // Top-Back-Right
+            [1, 5, 2], // Bottom-Front-Right
+            [1, 4, 5], // Bottom-Left-Front
+            [1, 3, 4], // Bottom-Back-Left
+            [1, 2, 3], // Bottom-Right-Back
+          ];
+
+          // Draw front-facing faces (using 2D backface culling)
+          for (final face in faces) {
+            final pA = rotatedVertices[face[0]];
+            final pB = rotatedVertices[face[1]];
+            final pC = rotatedVertices[face[2]];
+
+            // 2D Normal Z-component (winding order check)
+            // If Nz > 0, the face is front-facing (visible)
+            final nz = (pB.dx - pA.dx) * (pC.dy - pA.dy) - (pB.dy - pA.dy) * (pC.dx - pA.dx);
+
+            if (nz > 0) {
+              // Compute 3D normal for lighting
+              final vA = rotated3D[face[0]];
+              final vB = rotated3D[face[1]];
+              final vC = rotated3D[face[2]];
+
+              // Normal vector = (B - A) x (C - A)
+              final nx = (vB.y - vA.y) * (vC.z - vA.z) - (vB.z - vA.z) * (vC.y - vA.y);
+              final ny = (vB.z - vA.z) * (vC.x - vA.x) - (vB.x - vA.x) * (vC.z - vA.z);
+              final nz3d = (vB.x - vA.x) * (vC.y - vA.y) - (vB.y - vA.y) * (vC.x - vA.x);
+
+              // Normalize normal vector
+              final len = sqrt(nx * nx + ny * ny + nz3d * nz3d);
+              double dot = 0.0;
+              if (len > 0.0001) {
+                final unx = nx / len;
+                final uny = ny / len;
+                final unz = nz3d / len;
+                // Dot product with light source direction
+                dot = unx * lx + uny * ly + unz * lz;
+              }
+
+              // Map dot product from [-1.0, 1.0] to [0.0, 1.0]
+              final tLight = ((dot + 1.0) / 2.0).clamp(0.0, 1.0);
+
+              // Interpolate color based on light
+              final faceColor = Color.lerp(darkColor, lightColor, tLight)!;
+
+              final path = Path()
+                ..moveTo(pA.dx, pA.dy)
+                ..lineTo(pB.dx, pB.dy)
+                ..lineTo(pC.dx, pC.dy)
+                ..close();
+
+              final facePaint = Paint()
+                ..color = faceColor
+                ..style = PaintingStyle.fill;
+
+              canvas.drawPath(path, facePaint);
+
+              // Draw extremely thin neon-green highlights on the edges of the front-facing polygons
+              if (!isPenetrated) {
+                final edgePaint = Paint()
+                  ..color = const Color(0xFF00FF87).withOpacity(finalOpacity * 0.35)
+                  ..strokeWidth = 0.5
+                  ..style = PaintingStyle.stroke;
+                canvas.drawPath(path, edgePaint);
+              }
+            }
+          }
+        }
       } else {
         // Standard grey rock asteroid
         fillPaint.shader = LinearGradient(
@@ -1087,4 +1247,11 @@ class BoardPainter extends CustomPainter {
         oldDelegate.bgAnimationValue != bgAnimationValue ||
         oldDelegate.aimAnimationValue != aimAnimationValue;
   }
+}
+
+class _Offset3D {
+  final double x;
+  final double y;
+  final double z;
+  const _Offset3D(this.x, this.y, this.z);
 }
