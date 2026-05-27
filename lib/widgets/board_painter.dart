@@ -314,6 +314,37 @@ class BoardPainter extends CustomPainter {
         canvas.drawCircle(Offset(cellW / 3, -cellH / 3), scale * 0.02, boltPaint);
         canvas.drawCircle(Offset(-cellW / 3, cellH / 3), scale * 0.02, boltPaint);
         canvas.drawCircle(Offset(cellW / 3, cellH / 3), scale * 0.02, boltPaint);
+      } else if (wall.type == 'spaceLitter') {
+        // Space Debris / Trash look (Requires same laser power as Energy Shield)
+        final isPenetrated = wall.requiredLaserPower != null && laserIntensity >= wall.requiredLaserPower!;
+        final baseColor = isPenetrated ? const Color(0xFF00FF87).withOpacity(0.25) : const Color(0xFF00FF87);
+
+        fillPaint.shader = LinearGradient(
+          colors: [baseColor.withOpacity(0.4 * wallOpacity), const Color(0xFF2D3748).withOpacity(0.8 * wallOpacity)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(localRect);
+
+        outlinePaint.color = baseColor.withOpacity(0.8 * wallOpacity);
+
+        canvas.drawRRect(rrect, fillPaint);
+        canvas.drawRRect(rrect, outlinePaint);
+
+        // Draw multiple random messy floating debris shards/particles inside
+        final shardPaint = Paint()
+          ..color = baseColor.withOpacity(isPenetrated ? 0.1 : 0.6 * wallOpacity)
+          ..style = PaintingStyle.fill;
+
+        // Draw 3 small random polygons/shards inside the cell
+        canvas.drawCircle(Offset(-cellW * 0.2, -cellH * 0.1), scale * 0.025, shardPaint);
+        canvas.drawCircle(Offset(cellW * 0.15, -cellH * 0.25), scale * 0.02, shardPaint);
+        
+        final path = Path()
+          ..moveTo(-cellW * 0.25, cellH * 0.2)
+          ..lineTo(cellW * 0.2, cellH * 0.1)
+          ..lineTo(0, cellH * 0.3)
+          ..close();
+        canvas.drawPath(path, shardPaint);
       } else {
         // Standard grey rock asteroid
         fillPaint.shader = LinearGradient(
@@ -341,6 +372,8 @@ class BoardPainter extends CustomPainter {
         Color particleColor = const Color(0xFFE0E0E0);
         if (wall.type == 'energyShield') {
           particleColor = const Color(0xFF00FFF5);
+        } else if (wall.type == 'spaceLitter') {
+          particleColor = const Color(0xFF00FF87);
         } else if (wall.type == 'crystal') {
           particleColor = const Color(0xFFE040FB);
         } else if (wall.type == 'scrapMetal') {

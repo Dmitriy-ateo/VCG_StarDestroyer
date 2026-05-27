@@ -89,7 +89,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   }
 
   QuestModel _generateUniqueDailyQuest(GameProgression progression) {
-    final dailyLevel = SectorGenerator.generateDailySector(progression);
+    final dailyLevel = SectorGenerator.generateDailySector(progression, widget.galaxyId);
     // Generate a secure unique daily quest ID
     final uniqueId = "daily_quest_${dailyLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
     return QuestModel(
@@ -132,7 +132,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   }
 
   QuestModel _generateUniqueSideQuest(GalaxyModel galaxy, GameProgression progression) {
-    final sideLevel = SectorGenerator.generateDailySector(progression);
+    final sideLevel = SectorGenerator.generateDailySector(progression, galaxy.id);
     final uniqueId = "side_quest_${sideLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
 
     final List<String> sideTitles = [

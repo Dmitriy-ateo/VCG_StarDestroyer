@@ -77,6 +77,10 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
             final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
             final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
             text = "🛡️ [Energy Shield]\n$statusText\nLaser power decreases by 1 on penetration.";
+          } else if (wall.type == 'spaceLitter') {
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
+            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            text = "🪰 [Space Debris Litter]\n$statusText\nLaser power decreases by 1 on penetration.";
           } else if (wall.type == 'crystal') {
             final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
             final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";

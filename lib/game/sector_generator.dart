@@ -24,7 +24,7 @@ class SectorGenerator {
     "0xFF69F0AE"  // Laser Green
   ];
 
-  static LevelData generateDailySector(GameProgression progression) {
+  static LevelData generateDailySector(GameProgression progression, String galaxyId) {
     // Collect all unlocked device types
     final unlockedTypes = progression.unlockedDevices;
 
@@ -40,16 +40,16 @@ class SectorGenerator {
 
     switch (chosenTemplate) {
       case 'splitter':
-        return _generateSplitterTemplate(progression);
+        return _generateSplitterTemplate(progression, galaxyId);
       case 'bomb':
-        return _generateBombTemplate(progression);
+        return _generateBombTemplate(progression, galaxyId);
       case 'portal':
-        return _generatePortalTemplate(progression);
+        return _generatePortalTemplate(progression, galaxyId);
       case 'gravity':
-        return _generateGravityTemplate(progression);
+        return _generateGravityTemplate(progression, galaxyId);
       case 'reflector':
       default:
-        return _generateReflectorTemplate(progression);
+        return _generateReflectorTemplate(progression, galaxyId);
     }
   }
 
@@ -64,7 +64,7 @@ class SectorGenerator {
   }
 
   // Template 1: Reflector redirection (2 mirrors required)
-  static LevelData _generateReflectorTemplate(GameProgression progression) {
+  static LevelData _generateReflectorTemplate(GameProgression progression, String galaxyId) {
     // Death Star fixed at bottom center
     const dsX = 3;
     const dsY = 11;
@@ -115,16 +115,8 @@ class SectorGenerator {
       solutionCells.add("$x2,$y");
     }
 
-    // Add 2-3 random walls on unused cells
-    int placedClutter = 0;
-    while (placedClutter < 3) {
-      final wx = _random.nextInt(8);
-      final wy = 1 + _random.nextInt(9);
-      if (!solutionCells.contains("$wx,$wy") && wx != dsX && wy != dsY) {
-        walls.add(WallBlock(gridX: wx, gridY: wy, isDestructible: false));
-        placedClutter++;
-      }
-    }
+    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
+    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
 
     // Available inventory: 2 reflectors
     final List<DeviceModel> availableInventory = [
@@ -149,7 +141,7 @@ class SectorGenerator {
   }
 
   // Template 2: Splitter opposite orbits (1 splitter + 2 reflectors required)
-  static LevelData _generateSplitterTemplate(GameProgression progression) {
+  static LevelData _generateSplitterTemplate(GameProgression progression, String galaxyId) {
     const dsX = 3;
     const dsY = 11;
 
@@ -185,6 +177,22 @@ class SectorGenerator {
       WallBlock(gridX: 6, gridY: 5),
     ];
 
+    // Define solution cells:
+    final Set<String> solutionCells = {};
+    for (int y = 7; y <= 11; y++) {
+      solutionCells.add("3,$y");
+    }
+    for (int x = 1; x <= 6; x++) {
+      solutionCells.add("$x,7");
+    }
+    for (int y = 2; y <= 7; y++) {
+      solutionCells.add("1,$y");
+      solutionCells.add("6,$y");
+    }
+
+    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
+    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+
     // Available Inventory: 1 splitter (180 deg) and 2 reflectors
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_split1", type: DeviceType.splitter, splitAngleDegrees: 180.0),
@@ -209,7 +217,7 @@ class SectorGenerator {
   }
 
   // Template 3: Bomb chain reaction (1 bomb + 1 reflector required)
-  static LevelData _generateBombTemplate(GameProgression progression) {
+  static LevelData _generateBombTemplate(GameProgression progression, String galaxyId) {
     const dsX = 2;
     const dsY = 11;
 
@@ -250,6 +258,21 @@ class SectorGenerator {
       WallBlock(gridX: 2, gridY: 2), // Block direct vertical shot to other sides
     ];
 
+    // Define solution cells:
+    final Set<String> solutionCells = {};
+    for (int y = 4; y <= 11; y++) {
+      solutionCells.add("2,$y");
+    }
+    for (int x = 2; x <= 5; x++) {
+      solutionCells.add("$x,4");
+    }
+    solutionCells.add("4,2");
+    solutionCells.add("5,2");
+    solutionCells.add("6,2");
+
+    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
+    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+
     // Available Inventory: 1 reflector, 1 bomb
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
@@ -273,7 +296,7 @@ class SectorGenerator {
   }
 
   // Template 4: Spatial Portal transit (preset portals, requires 1 reflector)
-  static LevelData _generatePortalTemplate(GameProgression progression) {
+  static LevelData _generatePortalTemplate(GameProgression progression, String galaxyId) {
     const dsX = 3;
     const dsY = 11;
 
@@ -304,6 +327,21 @@ class SectorGenerator {
       DeviceModel(id: "d_port2", type: DeviceType.portal, gridX: 6, gridY: 5, portalPairId: "d_port1", isPlaced: true),
     ];
 
+    // Define solution cells:
+    final Set<String> solutionCells = {};
+    for (int y = 7; y <= 11; y++) {
+      solutionCells.add("3,$y");
+    }
+    for (int y = 2; y <= 5; y++) {
+      solutionCells.add("6,$y");
+    }
+    for (int x = 1; x <= 6; x++) {
+      solutionCells.add("$x,2");
+    }
+
+    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
+    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+
     // Available Inventory: 1 reflector
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
@@ -326,7 +364,7 @@ class SectorGenerator {
   }
 
   // Template 5: Gravity Well curvature (requires 1 gravity well)
-  static LevelData _generateGravityTemplate(GameProgression progression) {
+  static LevelData _generateGravityTemplate(GameProgression progression, String galaxyId) {
     const dsX = 2;
     const dsY = 11;
 
@@ -351,6 +389,19 @@ class SectorGenerator {
       WallBlock(gridX: 4, gridY: 5),
     ];
 
+    // Define solution cells:
+    final Set<String> solutionCells = {};
+    for (int y = 5; y <= 11; y++) {
+      solutionCells.add("2,$y");
+    }
+    for (int y = 2; y <= 7; y++) {
+      solutionCells.add("5,$y");
+    }
+    solutionCells.add("4,6");
+
+    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
+    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+
     // Available Inventory: 1 gravity well
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_well1", type: DeviceType.gravityWell),
@@ -370,5 +421,66 @@ class SectorGenerator {
       creditsReward: 300,
       researchPointsReward: 50,
     );
+  }
+
+  static void _addClutterWalls(List<WallBlock> walls, Set<String> solutionCells, String galaxyId, int dsX, int dsY) {
+    if (galaxyId == 'galaxy_1') {
+      // Just standard asteroid clutter in the first galaxy
+      int placedClutter = 0;
+      int attempts = 0;
+      while (placedClutter < 3 && attempts < 100) {
+        attempts++;
+        final wx = _random.nextInt(8);
+        final wy = 1 + _random.nextInt(9);
+        final cellKey = "$wx,$wy";
+        
+        final isOccupied = solutionCells.contains(cellKey) || 
+                           (wx == dsX && wy == dsY) ||
+                           walls.any((w) => w.gridX == wx && w.gridY == wy);
+
+        if (!isOccupied) {
+          walls.add(WallBlock(gridX: wx, gridY: wy, isDestructible: false, type: 'asteroid'));
+          placedClutter++;
+        }
+      }
+      return;
+    }
+
+    // 2nd galaxy and beyond: add random breakable energyShields and spaceLitter!
+    int placedClutter = 0;
+    int attempts = 0;
+    while (placedClutter < 3 && attempts < 100) {
+      attempts++;
+      final wx = _random.nextInt(8);
+      final wy = 1 + _random.nextInt(9);
+      final cellKey = "$wx,$wy";
+      
+      final isOccupied = solutionCells.contains(cellKey) || 
+                         (wx == dsX && wy == dsY) ||
+                         walls.any((w) => w.gridX == wx && w.gridY == wy);
+
+      if (!isOccupied) {
+        final rand = _random.nextDouble();
+        String wallType = 'asteroid';
+        int? reqPower;
+        
+        if (rand < 0.35) {
+          wallType = 'energyShield';
+          reqPower = 2;
+        } else if (rand < 0.70) {
+          wallType = 'spaceLitter';
+          reqPower = 2;
+        }
+
+        walls.add(WallBlock(
+          gridX: wx,
+          gridY: wy,
+          isDestructible: wallType != 'asteroid',
+          type: wallType,
+          requiredLaserPower: reqPower,
+        ));
+        placedClutter++;
+      }
+    }
   }
 }
