@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/device_model.dart';
@@ -9,12 +10,14 @@ class GameBoardScreen extends StatefulWidget {
   final GameController controller;
   final VoidCallback onBackToMenu;
   final VoidCallback onGoToShop;
+  final VoidCallback onGoToResearch;
 
   const GameBoardScreen({
     super.key,
     required this.controller,
     required this.onBackToMenu,
     required this.onGoToShop,
+    required this.onGoToResearch,
   });
 
   @override
@@ -26,6 +29,8 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   late AnimationController _bgAnimationController;
   late AnimationController _aimAnimationController;
   Offset? _hoverPosition;
+  String? _activeTooltipText;
+  Offset? _tooltipPosition;
 
   @override
   void initState() {
@@ -46,6 +51,101 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     _bgAnimationController.dispose();
     _aimAnimationController.dispose();
     super.dispose();
+  }
+
+  void _showTooltipAt(int x, int y, Offset localPos) {
+    if (x < 0 || x >= 8 || y < 0 || y >= 12) {
+      _hideTooltip();
+      return;
+    }
+
+    String? text;
+
+    // 1. Check Planets
+    for (var planet in widget.controller.currentLevel.planets) {
+      if (planet.gridX == x && planet.gridY == y) {
+        text = "🪐 [Planet: ${planet.name}]\nTarget rebel base. Direct the superlaser here to destroy it.";
+        break;
+      }
+    }
+
+    // 2. Check Walls
+    if (text == null) {
+      for (var wall in widget.controller.currentLevel.walls) {
+        if (wall.gridX == x && wall.gridY == y) {
+          if (wall.type == 'energyShield') {
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
+            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            text = "🛡️ [Energy Shield]\n$statusText\nLaser power decreases by 1 on penetration.";
+          } else if (wall.type == 'crystal') {
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
+            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            text = "💎 [Crystal Matrix]\n$statusText\nLaser power decreases by 1 on penetration.";
+          } else if (wall.type == 'scrapMetal') {
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
+            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            text = "⚙️ [Scrap Metal]\n$statusText\nLaser power decreases by 1 on penetration.";
+          } else {
+            text = "🪨 [Asteroid Block]\nIndestructible static barrier. Completely blocks the laser.";
+          }
+          break;
+        }
+      }
+    }
+
+    // 3. Check Placed Devices
+    if (text == null) {
+      for (var dev in widget.controller.placedDevices) {
+        if (dev.isPlaced && dev.gridX == x && dev.gridY == y) {
+          text = _getDeviceDescription(dev);
+          break;
+        }
+      }
+    }
+
+    // 4. Check Preset Devices
+    if (text == null) {
+      for (var dev in widget.controller.currentLevel.presetDevices) {
+        if (dev.isPlaced && dev.gridX == x && dev.gridY == y) {
+          text = _getDeviceDescription(dev);
+          break;
+        }
+      }
+    }
+
+    if (text != null) {
+      setState(() {
+        _activeTooltipText = text;
+        _tooltipPosition = localPos;
+      });
+      HapticFeedback.selectionClick();
+    } else {
+      _hideTooltip();
+    }
+  }
+
+  String _getDeviceDescription(DeviceModel dev) {
+    switch (dev.type) {
+      case DeviceType.reflector:
+        return "🪞 [Reflector]\nBounces the laser at 90° angles. Tap to rotate.";
+      case DeviceType.splitter:
+        return "📐 [Splitter (${dev.splitAngleDegrees?.toStringAsFixed(0)}°)]\nSplits the incoming laser into twin beams. Tap to rotate.";
+      case DeviceType.portal:
+        return "🌀 [Quantum Portal]\nTeleports the incoming laser beam instantly to its paired portal.";
+      case DeviceType.gravityWell:
+        return "🕳️ [Gravity Well]\nGenerates a gravity pull that continuously curves the laser beam path.";
+      case DeviceType.bomb:
+        return "💣 [Tactical Bomb]\nDetonates in a 2.2-unit radius when hit, destroying all nearby planets.";
+    }
+  }
+
+  void _hideTooltip() {
+    if (_activeTooltipText != null) {
+      setState(() {
+        _activeTooltipText = null;
+        _tooltipPosition = null;
+      });
+    }
   }
 
   @override
@@ -103,71 +203,98 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   }
 
   Widget _buildTopPanel(LevelData level) {
+    final isEditing = widget.controller.playState == PlayState.editing;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
         color: Color(0xFF161B22),
         border: Border(bottom: BorderSide(color: Color(0xFF00ADB5), width: 1)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Row 1: Back Button + Level Name + Shop Button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5), size: 20),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: widget.onBackToMenu,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    level.name.split(':').last.trim().toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.8),
-                  ),
-                ],
-              ),
-              ElevatedButton.icon(
-                onPressed: widget.controller.playState == PlayState.editing ? widget.onGoToShop : null,
-                icon: const Icon(Icons.shopping_cart, size: 12),
-                label: const Text("SHOP", style: TextStyle(fontSize: 11)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF393E46),
-                  foregroundColor: const Color(0xFF00ADB5),
-                  side: const BorderSide(color: Color(0xFF00ADB5), width: 1),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5), size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: widget.onBackToMenu,
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          level.name.split(':').last.trim().toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _showLevelInfoDialog(context, level);
+                        },
+                        child: const MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Icon(
+                            Icons.help_outline_rounded,
+                            color: Color(0xFF00ADB5),
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          
-          // Row 2: Sector Description + Currency Stats
+          const SizedBox(width: 12),
+          // Currency indicators side-by-side (Clickable HUD button dials)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: Text(
-                  level.description,
-                  style: const TextStyle(color: Colors.grey, fontSize: 10, height: 1.3),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              GestureDetector(
+                onTap: isEditing ? () {
+                  HapticFeedback.lightImpact();
+                  widget.onGoToShop();
+                } : null,
+                child: MouseRegion(
+                  cursor: isEditing ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                  child: Opacity(
+                    opacity: isEditing ? 1.0 : 0.6,
+                    child: _buildStatChip(Icons.monetization_on, "${widget.controller.progression.credits}", Colors.amberAccent),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              // Currency indicators side-by-side
-              Row(
-                children: [
-                  _buildStatChip(Icons.monetization_on, "${widget.controller.progression.credits}", Colors.amberAccent),
-                  const SizedBox(width: 6),
-                  _buildStatChip(Icons.science, "${widget.controller.progression.researchPoints}", Colors.purpleAccent),
-                ],
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: isEditing ? () {
+                  HapticFeedback.lightImpact();
+                  widget.onGoToResearch();
+                } : null,
+                child: MouseRegion(
+                  cursor: isEditing ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                  child: Opacity(
+                    opacity: isEditing ? 1.0 : 0.6,
+                    child: _buildStatChip(Icons.science, "${widget.controller.progression.researchPoints} RP", Colors.purpleAccent),
+                  ),
+                ),
               ),
             ],
           ),
@@ -176,19 +303,114 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     );
   }
 
+  void _showLevelInfoDialog(BuildContext context, LevelData level) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF0B0E14).withOpacity(0.95),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF00ADB5), width: 1.5),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: Color(0xFF00ADB5), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    level.name.split(':').last.trim().toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "SECTOR BRIEFING",
+                  style: TextStyle(
+                    color: Color(0xFF00FFF5),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  level.description,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).pop();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF00ADB5),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: const Text(
+                  "DISMISS",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF222831),
+        color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 4,
+            spreadRadius: 0.5,
+          )
+        ],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(text, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
         ],
       ),
     );
@@ -235,6 +457,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
           },
           child: GestureDetector(
             onPanStart: (details) {
+              _hideTooltip();
               if (widget.controller.playState != PlayState.editing) return;
               _aimAnimationController.forward();
             },
@@ -252,6 +475,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
               _aimAnimationController.reverse();
             },
             onTapUp: (details) {
+              _hideTooltip();
               if (widget.controller.playState != PlayState.editing) return;
               
               final x = ((details.localPosition.dx - offsetX) / cellW).floor();
@@ -279,9 +503,10 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                 }
               }
             },
-            onLongPressStart: (details) {
+            onDoubleTapDown: (details) {
+              _hideTooltip();
               if (widget.controller.playState != PlayState.editing) return;
-              
+
               final x = ((details.localPosition.dx - offsetX) / cellW).floor();
               final y = ((details.localPosition.dy - offsetY) / cellH).floor();
 
@@ -296,6 +521,17 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                 widget.controller.removeDevice(clickedDevice);
                 HapticFeedback.mediumImpact();
               }
+            },
+            onLongPressStart: (details) {
+              final x = ((details.localPosition.dx - offsetX) / cellW).floor();
+              final y = ((details.localPosition.dy - offsetY) / cellH).floor();
+              _showTooltipAt(x, y, details.localPosition);
+            },
+            onLongPressEnd: (details) {
+              _hideTooltip();
+            },
+            onLongPressCancel: () {
+              _hideTooltip();
             },
             child: Stack(
               clipBehavior: Clip.none,
@@ -317,6 +553,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                           selectedInventoryDevice: widget.controller.selectedInventoryDevice,
                           bgAnimationValue: _bgAnimationController.value,
                           aimAnimationValue: _aimAnimationController.value,
+                          laserIntensity: widget.controller.progression.laserIntensityLevel,
                         ),
                         child: Container(),
                       ),
@@ -349,6 +586,40 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                         child: _buildDeviceIcon(
                           widget.controller.selectedInventoryDevice!.type,
                           widget.controller.selectedInventoryDevice!.splitAngleDegrees,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 3. High-Tech Floating Tooltip Description Box
+                if (_activeTooltipText != null && _tooltipPosition != null)
+                  Positioned(
+                    left: (_tooltipPosition!.dx - 100).clamp(16.0, sizeW - 216.0),
+                    top: (_tooltipPosition!.dy - 95).clamp(16.0, sizeH - 140.0),
+                    child: IgnorePointer(
+                      child: Container(
+                        width: 200,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xE60F1115),
+                          border: Border.all(color: const Color(0xFF00FFF5), width: 1.5),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0x3300FFF5),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            )
+                          ],
+                        ),
+                        child: Text(
+                          _activeTooltipText!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.0,
+                            height: 1.4,
+                            fontFamily: 'Outfit',
+                          ),
                         ),
                       ),
                     ),
@@ -400,54 +671,23 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildActivePlacementBanner() {
-    final dev = widget.controller.selectedInventoryDevice!;
-    final name = dev.type == DeviceType.splitter && dev.splitAngleDegrees != null
-        ? "SPLITTER ${dev.splitAngleDegrees!.toStringAsFixed(0)}°"
-        : dev.type.name.toUpperCase();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF2E93).withOpacity(0.15),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: const Color(0xFFFF2E93), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF2E93).withOpacity(0.15),
-            blurRadius: 10,
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.info_outline, color: Color(0xFFFF2E93), size: 16),
-          const SizedBox(width: 8),
-          Text(
-            "ACTIVE PLACEMENT: $name",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              widget.controller.selectInventoryDevice(null);
-            },
-            child: const Icon(Icons.cancel, color: Colors.grey, size: 16),
-          ),
-        ],
-      ),
-    );
+  String _getGroupKey(DeviceModel item) {
+    if (item.type == DeviceType.splitter && item.splitAngleDegrees != null) {
+      return "splitter_${item.splitAngleDegrees!.toStringAsFixed(0)}";
+    }
+    return item.type.name;
   }
 
   Widget _buildGlassmorphicDrawer() {
     final availableItems = widget.controller.inventory.where((item) => !item.isPlaced).toList();
+
+    // Group available items by type (and angle for splitters)
+    final Map<String, List<DeviceModel>> groupedItems = {};
+    for (var item in availableItems) {
+      final key = _getGroupKey(item);
+      groupedItems.putIfAbsent(key, () => []).add(item);
+    }
+    final groupKeys = groupedItems.keys.toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -506,7 +746,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
             
             // List of available blueprints
             Expanded(
-              child: availableItems.isEmpty
+              child: groupKeys.isEmpty
                   ? const Center(
                       child: Text(
                         "ALL BLUEPRINTS PLACED",
@@ -515,18 +755,21 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                     )
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      itemCount: availableItems.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      itemCount: groupKeys.length,
                       itemBuilder: (context, index) {
-                        final item = availableItems[index];
-                        final isSelected = widget.controller.selectedInventoryDevice?.id == item.id;
+                        final key = groupKeys[index];
+                        final itemsInGroup = groupedItems[key]!;
+                        final representativeItem = itemsInGroup.first;
+                        final isSelected = widget.controller.selectedInventoryDevice != null &&
+                            _getGroupKey(widget.controller.selectedInventoryDevice!) == key;
 
                         return GestureDetector(
                           onTap: () {
                             if (isSelected) {
                               widget.controller.selectInventoryDevice(null);
                             } else {
-                              widget.controller.selectInventoryDevice(item);
+                              widget.controller.selectInventoryDevice(representativeItem);
                               setState(() {
                                 _isInventoryOpen = false;
                               });
@@ -534,36 +777,71 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                             HapticFeedback.selectionClick();
                           },
                           child: Container(
-                            width: 100,
-                            margin: const EdgeInsets.only(right: 12),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFFFF2E93).withOpacity(0.15)
-                                  : const Color(0xFF161B22),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected ? const Color(0xFFFF2E93) : const Color(0xFF393E46),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            margin: const EdgeInsets.only(right: 16),
+                            child: Stack(
+                              clipBehavior: Clip.none,
                               children: [
-                                _buildDeviceIcon(item.type, item.splitAngleDegrees),
-                                const SizedBox(height: 8),
-                                Text(
-                                  item.type == DeviceType.splitter && item.splitAngleDegrees != null
-                                      ? "SPLIT ${item.splitAngleDegrees!.toStringAsFixed(0)}°"
-                                      : item.type.name.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                                // Premium Cyber Card
+                                Container(
+                                  width: 100,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFFFF2E93).withOpacity(0.15)
+                                        : const Color(0xFF161B22),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected ? const Color(0xFFFF2E93) : const Color(0xFF393E46),
+                                      width: 1.5,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      _buildDeviceIcon(representativeItem.type, representativeItem.splitAngleDegrees),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        representativeItem.type == DeviceType.splitter && representativeItem.splitAngleDegrees != null
+                                            ? "SPLIT ${representativeItem.splitAngleDegrees!.toStringAsFixed(0)}°"
+                                            : representativeItem.type.name.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Cyber-Cyan Count Badge overlay
+                                Positioned(
+                                  top: -6,
+                                  right: -6,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00ADB5), // Cyan/Teal
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFF0B0E14), width: 1.5),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF00ADB5).withOpacity(0.4),
+                                          blurRadius: 4,
+                                        )
+                                      ],
+                                    ),
+                                    child: Text(
+                                      "x${itemsInGroup.length}",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -675,25 +953,6 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAngleButton(String label, VoidCallback onPressed, bool enabled) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      child: TextButton(
-        onPressed: enabled ? onPressed : null,
-        style: TextButton.styleFrom(
-          backgroundColor: const Color(0xFF222831),
-          foregroundColor: const Color(0xFFEEEEEE),
-          disabledForegroundColor: Colors.grey,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          minimumSize: const Size(40, 30),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-          side: const BorderSide(color: Color(0xFF393E46), width: 1),
-        ),
-        child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
       ),
     );
   }

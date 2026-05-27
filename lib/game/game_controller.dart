@@ -108,51 +108,6 @@ class GameController extends ChangeNotifier {
       }
     }
 
-    // Append market-purchased devices to the inventory pool
-    progression.purchasedMarketDevices.forEach((itemId, count) {
-      if (count <= 0) return;
-      
-      if (itemId == 'portal') {
-        for (int i = 0; i < count; i++) {
-          final devId = "market_portal_${idCounter++}";
-          final pairIdString = "market_portal_${idCounter++}";
-          
-          inventory.add(DeviceModel(
-            id: devId,
-            type: DeviceType.portal,
-            portalPairId: pairIdString,
-            isPlaced: false,
-          ));
-          inventory.add(DeviceModel(
-            id: pairIdString,
-            type: DeviceType.portal,
-            portalPairId: devId,
-            isPlaced: false,
-          ));
-        }
-      } else if (itemId.startsWith('splitter_')) {
-        final angleStr = itemId.split('_')[1];
-        final angle = double.tryParse(angleStr) ?? 180.0;
-        for (int i = 0; i < count; i++) {
-          inventory.add(DeviceModel(
-            id: "market_${itemId}_${idCounter++}",
-            type: DeviceType.splitter,
-            splitAngleDegrees: angle,
-            isPlaced: false,
-          ));
-        }
-      } else {
-        final type = DeviceType.values.firstWhere((e) => e.name == itemId, orElse: () => DeviceType.reflector);
-        for (int i = 0; i < count; i++) {
-          inventory.add(DeviceModel(
-            id: "market_${itemId}_${idCounter++}",
-            type: type,
-            isPlaced: false,
-          ));
-        }
-      }
-    });
-
     notifyListeners();
   }
 
@@ -170,35 +125,9 @@ class GameController extends ChangeNotifier {
     creditsEarned = 0;
     researchPointsEarned = 0;
 
-    // Initialize inventory from level data templates
+    // Initialize inventory (Only storefront purchased devices)
     inventory = [];
     int idCounter = 0;
-    
-    // For campaign quests, always unlock the level's available inventory
-    for (var template in currentLevel.availableInventory) {
-      final type = template.type;
-      String devId = "inv_${type.name}_${idCounter++}";
-
-      // If portal, handle pair creation
-      if (type == DeviceType.portal) {
-        final pairIdString = "inv_${type.name}_${idCounter++}";
-        inventory.add(template.copyWith(
-          id: devId,
-          portalPairId: pairIdString,
-          isPlaced: false,
-        ));
-        inventory.add(template.copyWith(
-          id: pairIdString,
-          portalPairId: devId,
-          isPlaced: false,
-        ));
-      } else {
-        inventory.add(template.copyWith(
-          id: devId,
-          isPlaced: false,
-        ));
-      }
-    }
 
     // Append market-purchased devices to the inventory pool
     progression.purchasedMarketDevices.forEach((itemId, count) {
@@ -369,12 +298,46 @@ class GameController extends ChangeNotifier {
     });
   }
 
+  String? _getMarketItemId(DeviceModel device) {
+    if (!device.id.startsWith("market_")) return null;
+    if (device.type == DeviceType.portal) return 'portal';
+    if (device.type == DeviceType.splitter && device.splitAngleDegrees != null) {
+      return 'splitter_${device.splitAngleDegrees!.toStringAsFixed(0)}';
+    }
+    return device.type.name;
+  }
+
   void _completeSimulation() {
     if (traceResult != null) {
       if (traceResult!.success) {
         playState = PlayState.victory;
         
         if (activeQuest != null) {
+          // Consume the placed market devices from permanent inventory
+          final Set<String> consumedPortalIds = {};
+          for (var device in placedDevices) {
+            if (device.type == DeviceType.portal) {
+              if (consumedPortalIds.contains(device.id)) continue;
+              const itemId = 'portal';
+              final currentCount = progression.purchasedMarketDevices[itemId] ?? 0;
+              if (currentCount > 0) {
+                progression.purchasedMarketDevices[itemId] = currentCount - 1;
+              }
+              consumedPortalIds.add(device.id);
+              if (device.portalPairId != null) {
+                consumedPortalIds.add(device.portalPairId!);
+              }
+            } else {
+              final itemId = _getMarketItemId(device);
+              if (itemId != null) {
+                final currentCount = progression.purchasedMarketDevices[itemId] ?? 0;
+                if (currentCount > 0) {
+                  progression.purchasedMarketDevices[itemId] = currentCount - 1;
+                }
+              }
+            }
+          }
+
           final questId = activeQuest!.id;
           final alreadyCompleted = progression.completedQuestIds.contains(questId);
           if (!alreadyCompleted) {
@@ -493,6 +456,47 @@ class GameController extends ChangeNotifier {
     if (progression.credits >= cost) {
       progression.credits -= cost;
       progression.purchasedMarketDevices[itemId] = (progression.purchasedMarketDevices[itemId] ?? 0) + 1;
+
+      // Dynamic Active Quest Inventory Injection: 
+      // If currently inside an active campaign quest, add the newly purchased device count instantly to active inventory!
+      if (activeQuest != null) {
+        final idCounter = inventory.length + placedDevices.length + 100;
+        
+        if (itemId == 'portal') {
+          final devId = "market_portal_${idCounter}";
+          final pairIdString = "market_portal_${idCounter + 1}";
+          
+          inventory.add(DeviceModel(
+            id: devId,
+            type: DeviceType.portal,
+            portalPairId: pairIdString,
+            isPlaced: false,
+          ));
+          inventory.add(DeviceModel(
+            id: pairIdString,
+            type: DeviceType.portal,
+            portalPairId: devId,
+            isPlaced: false,
+          ));
+        } else if (itemId.startsWith('splitter_')) {
+          final angleStr = itemId.split('_')[1];
+          final angle = double.tryParse(angleStr) ?? 180.0;
+          inventory.add(DeviceModel(
+            id: "market_${itemId}_${idCounter}",
+            type: DeviceType.splitter,
+            splitAngleDegrees: angle,
+            isPlaced: false,
+          ));
+        } else {
+          final type = DeviceType.values.firstWhere((e) => e.name == itemId, orElse: () => DeviceType.reflector);
+          inventory.add(DeviceModel(
+            id: "market_${itemId}_${idCounter}",
+            type: type,
+            isPlaced: false,
+          ));
+        }
+      }
+
       notifyListeners();
       return true;
     }

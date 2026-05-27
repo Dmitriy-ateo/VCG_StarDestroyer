@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 import 'game/game_controller.dart';
 import 'screens/main_menu_screen.dart';
 import 'screens/level_select_screen.dart';
@@ -8,6 +9,7 @@ import 'screens/research_shop_screen.dart';
 import 'screens/market_screen.dart';
 import 'screens/galaxies_map_screen.dart';
 import 'screens/galaxy_board_screen.dart';
+import 'theme/style_guide.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,13 +34,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Star Destroyer: Single Shot',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const AppScrollBehavior(),
       theme: ThemeData(
         brightness: Brightness.dark,
         fontFamily: 'Roboto',
+        scaffoldBackgroundColor: StyleGuide.neutralBg,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00ADB5),
-          secondary: Color(0xFF00FFF5),
-          surface: Color(0xFF161B22),
+          primary: StyleGuide.primary,
+          secondary: StyleGuide.tertiary,
+          surface: StyleGuide.neutralCard,
         ),
         useMaterial3: true,
       ),
@@ -57,14 +61,39 @@ class GameRouter extends StatefulWidget {
 class _GameRouterState extends State<GameRouter> {
   // Screens: 'menu', 'select', 'game', 'shop', 'market', 'galaxies', 'galaxy_board'
   String _currentScreen = 'menu';
-  String _previousScreen = 'menu';
+  final List<String> _screenHistory = ['menu'];
   String _selectedGalaxyId = '';
   final GameController _controller = GameController();
 
   void _navigateTo(String screen) {
+    try {
+      ScaffoldMessenger.of(context).clearSnackBars();
+    } catch (_) {
+      // Safe fallback if called during build
+    }
     setState(() {
-      _previousScreen = _currentScreen;
+      if (screen == 'menu') {
+        _screenHistory.clear();
+        _screenHistory.add('menu');
+      } else {
+        if (_screenHistory.isEmpty || _screenHistory.last != screen) {
+          _screenHistory.add(screen);
+        }
+      }
       _currentScreen = screen;
+    });
+  }
+
+  void _goBack() {
+    setState(() {
+      if (_screenHistory.length > 1) {
+        _screenHistory.removeLast();
+        _currentScreen = _screenHistory.last;
+      } else {
+        _currentScreen = 'menu';
+        _screenHistory.clear();
+        _screenHistory.add('menu');
+      }
     });
   }
 
@@ -98,22 +127,19 @@ class _GameRouterState extends State<GameRouter> {
           controller: _controller,
           onBackToMenu: () => _navigateTo(_controller.activeQuest != null ? 'galaxy_board' : 'select'),
           onGoToShop: () => _navigateTo('market'),
+          onGoToResearch: () => _navigateTo('shop'),
         );
       case 'shop':
         return ResearchShopScreen(
           controller: _controller,
-          onBackToGame: () {
-            // Exiting shop returns to game board if entered from game, else returns to menu.
-            _navigateTo(_previousScreen == 'game' ? 'game' : 'menu');
-          },
+          onBackToGame: () => _goBack(),
+          onGoToShop: () => _navigateTo('market'),
         );
       case 'market':
         return MarketScreen(
           controller: _controller,
-          onBackToMenu: () {
-            // Exiting market returns to game board if entered from game, else returns to menu.
-            _navigateTo(_previousScreen == 'game' ? 'game' : 'menu');
-          },
+          onBackToMenu: () => _goBack(),
+          onGoToResearch: () => _navigateTo('shop'),
         );
       case 'galaxies':
         return GalaxiesMapScreen(
@@ -125,6 +151,8 @@ class _GameRouterState extends State<GameRouter> {
             _navigateTo('galaxy_board');
           },
           onBackToMenu: () => _navigateTo('menu'),
+          onGoToShop: () => _navigateTo('market'),
+          onGoToResearch: () => _navigateTo('shop'),
         );
       case 'galaxy_board':
         return GalaxyBoardScreen(
@@ -135,6 +163,8 @@ class _GameRouterState extends State<GameRouter> {
             _navigateTo('game');
           },
           onBackToMap: () => _navigateTo('galaxies'),
+          onGoToShop: () => _navigateTo('market'),
+          onGoToResearch: () => _navigateTo('shop'),
         );
       default:
         return MainMenuScreen(
@@ -144,5 +174,22 @@ class _GameRouterState extends State<GameRouter> {
           onOpenMarket: () => _navigateTo('market'),
         );
     }
+  }
+}
+
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+
+  @override
+  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
   }
 }

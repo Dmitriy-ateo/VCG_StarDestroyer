@@ -59,11 +59,15 @@ class WallBlock {
   final int gridX;
   final int gridY;
   final bool isDestructible; // Can be blown up by a bomb
+  final String type; // 'asteroid', 'energyShield', 'crystal', 'scrapMetal'
+  final int? requiredLaserPower; // Power level needed to bypass/destroy it.
 
   WallBlock({
     required this.gridX,
     required this.gridY,
     this.isDestructible = false,
+    this.type = 'asteroid',
+    this.requiredLaserPower,
   });
 
   factory WallBlock.fromJson(Map<String, dynamic> json) {
@@ -71,6 +75,8 @@ class WallBlock {
       gridX: json['gridX'] as int,
       gridY: json['gridY'] as int,
       isDestructible: json['isDestructible'] as bool? ?? false,
+      type: json['type'] as String? ?? 'asteroid',
+      requiredLaserPower: json['requiredLaserPower'] as int?,
     );
   }
 }

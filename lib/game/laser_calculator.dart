@@ -45,6 +45,7 @@ class LaserBeam {
   List<Offset> path;
   Set<String> visitedDevices;
   bool isAlive;
+  int intensity;
 
   LaserBeam({
     required this.pos,
@@ -52,6 +53,7 @@ class LaserBeam {
     required this.path,
     required this.visitedDevices,
     this.isAlive = true,
+    required this.intensity,
   });
 }
 
@@ -91,6 +93,7 @@ class LaserCalculator {
         dir: startDir,
         path: [startPos],
         visitedDevices: {},
+        intensity: laserIntensity,
       )
     ];
 
@@ -129,6 +132,31 @@ class LaserCalculator {
           // If inside the wall cell [gridX, gridX+1] x [gridY, gridY+1]
           if (beam.pos.dx >= wall.gridX && beam.pos.dx <= wall.gridX + 1 &&
               beam.pos.dy >= wall.gridY && beam.pos.dy <= wall.gridY + 1) {
+            
+            // Check if laser intensity is enough to penetrate and shatter this wall
+            if (wall.requiredLaserPower != null && beam.intensity >= wall.requiredLaserPower!) {
+              final wallId = "wall_${wall.gridX}_${wall.gridY}";
+              
+              if (beam.visitedDevices.contains(wallId)) {
+                continue; // Already penetrated this block, let the laser pass through freely
+              }
+              
+              beam.visitedDevices.add(wallId);
+
+              if (!explodedBombIds.contains(wallId)) {
+                explodedBombIds.add(wallId);
+                explosions.add(ExplosionEvent(
+                  gridPos: Offset(wall.gridX + 0.5, wall.gridY + 0.5),
+                  stepIndex: step,
+                  radius: 1.0,
+                  targetId: wallId,
+                  isBomb: false,
+                ));
+              }
+              beam.intensity--; // Lose 1 power on penetration!
+              continue; // Penetrate and bypass
+            }
+
             hitWall = true;
             break;
           }
@@ -232,6 +260,7 @@ class LaserCalculator {
                 dir: dir2,
                 path: List.from(beam.path),
                 visitedDevices: Set.from(beam.visitedDevices),
+                intensity: beam.intensity,
               ));
 
               // Redirect the original beam to direction 1

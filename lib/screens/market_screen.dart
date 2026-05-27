@@ -7,11 +7,13 @@ import '../game/game_controller.dart';
 class MarketScreen extends StatelessWidget {
   final GameController controller;
   final VoidCallback onBackToMenu;
+  final VoidCallback onGoToResearch;
 
   const MarketScreen({
     super.key,
     required this.controller,
     required this.onBackToMenu,
+    required this.onGoToResearch,
   });
 
   @override
@@ -107,43 +109,83 @@ class MarketScreen extends StatelessWidget {
                   // 1. Header Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.arrow_back, color: Color(0xFF00FFF5)),
+                              icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
                               onPressed: onBackToMenu,
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             const Expanded(
-                              child: Text(
-                                "TACTICAL MARKET",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.0,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "TACTICAL MARKET",
+                                    style: TextStyle(
+                                      color: Color(0xFFFFFFFF),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    "MERCHANT DEPLOYMENT CONSOLE",
+                                    style: TextStyle(
+                                      color: Color(0xFF00FFF5),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.8,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       // Currency statuses
                       Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                            },
+                            child: _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
+                          ),
                           const SizedBox(width: 8),
-                          _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              onGoToResearch();
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                            ),
+                          ),
                         ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 1,
+                    color: const Color(0xFF00ADB5).withOpacity(0.15),
                   ),
                   const SizedBox(height: 12),
 
@@ -297,7 +339,9 @@ class MarketScreen extends StatelessWidget {
                                           ? () {
                                               controller.buyMarketDevice(item.itemId);
                                               HapticFeedback.mediumImpact();
-                                              ScaffoldMessenger.of(context).showSnackBar(
+                                              final messenger = ScaffoldMessenger.of(context);
+                                              messenger.clearSnackBars();
+                                              messenger.showSnackBar(
                                                 SnackBar(
                                                   behavior: SnackBarBehavior.floating,
                                                   backgroundColor: const Color(0xFF161B22),
@@ -368,23 +412,31 @@ class MarketScreen extends StatelessWidget {
 
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 4,
+            spreadRadius: 0.5,
+          )
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
           Text(
             text,
             style: TextStyle(
               color: color,
               fontSize: 10.5,
               fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
         ],

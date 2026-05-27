@@ -16,6 +16,7 @@ class BoardPainter extends CustomPainter {
   final DeviceModel? selectedInventoryDevice;
   final double bgAnimationValue;
   final double aimAnimationValue;
+  final int laserIntensity;
 
   BoardPainter({
     required this.level,
@@ -28,6 +29,7 @@ class BoardPainter extends CustomPainter {
     this.selectedInventoryDevice,
     required this.bgAnimationValue,
     this.aimAnimationValue = 0.0,
+    required this.laserIntensity,
   });
 
   @override
@@ -193,37 +195,170 @@ class BoardPainter extends CustomPainter {
       );
     }
 
-    // 2. Draw Static Asteroid Walls
-    final wallPaint = Paint()
-      ..style = PaintingStyle.fill;
-    final wallOutline = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = const Color(0xFF393E46);
-
+    // 2. Draw Static Asteroid / Energy / Crystal Walls
     for (var wall in level.walls) {
-      final rect = Rect.fromLTWH(offsetX + wall.gridX * cellW + 2, offsetY + wall.gridY * cellH + 2, cellW - 4, cellH - 4);
-      final rrect = RRect.fromRectAndRadius(rect, Radius.circular(scale * 0.15));
-      
-      // Gray steel texture gradient for asteroids
-      wallPaint.shader = const LinearGradient(
-        colors: [Color(0xFF222831), Color(0xFF393E46), Color(0xFF1E222B)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ).createShader(rect);
-      
-      canvas.drawRRect(rrect, wallPaint);
-      canvas.drawRRect(rrect, wallOutline);
+      ExplosionEvent? wallExplosion;
+      if (traceResult != null && playState != PlayState.editing) {
+        final wallId = "wall_${wall.gridX}_${wall.gridY}";
+        for (var exp in traceResult!.explosions) {
+          if (exp.targetId == wallId) {
+            wallExplosion = exp;
+            break;
+          }
+        }
+      }
 
-      // Draw rock details inside
-      final detailPaint = Paint()
-        ..color = Colors.black.withOpacity(0.3)
-        ..strokeWidth = 1.0;
-      canvas.drawLine(
-        Offset(offsetX + wall.gridX * cellW + cellW * 0.3, offsetY + wall.gridY * cellH + cellH * 0.2),
-        Offset(offsetX + wall.gridX * cellW + cellW * 0.7, offsetY + wall.gridY * cellH + cellH * 0.8),
-        detailPaint,
-      );
+      double wallOpacity = 1.0;
+      double wallScale = 1.0;
+      bool showParticles = false;
+      double particleProgress = 0.0;
+
+      if (wallExplosion != null) {
+        final totalSteps = LaserCalculator.maxSteps.toDouble();
+        final currentMaxStep = animationProgress * totalSteps;
+        if (currentMaxStep >= wallExplosion.stepIndex) {
+          final elapsed = currentMaxStep - wallExplosion.stepIndex;
+          if (elapsed >= 15.0) {
+            // Fully destroyed and shattered, do not draw!
+            continue;
+          }
+          wallOpacity = (1.0 - elapsed / 15.0).clamp(0.0, 1.0);
+          wallScale = 1.0 + (elapsed / 15.0) * 0.2;
+          showParticles = true;
+          particleProgress = elapsed / 15.0;
+        }
+      }
+
+      final cellCenter = Offset(offsetX + wall.gridX * cellW + cellW / 2, offsetY + wall.gridY * cellH + cellH / 2);
+      canvas.save();
+      canvas.translate(cellCenter.dx, cellCenter.dy);
+      canvas.scale(wallScale);
+
+      final localRect = Rect.fromLTWH(-cellW / 2 + 2, -cellH / 2 + 2, cellW - 4, cellH - 4);
+      final rrect = RRect.fromRectAndRadius(localRect, Radius.circular(scale * 0.15));
+
+      final fillPaint = Paint()..style = PaintingStyle.fill;
+      final outlinePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+
+      if (wall.type == 'energyShield') {
+        // Neon glowing cyan energy barrier
+        final isPenetrated = wall.requiredLaserPower != null && laserIntensity >= wall.requiredLaserPower!;
+        final baseColor = isPenetrated ? const Color(0xFF00FFF5).withOpacity(0.2) : const Color(0xFF00FFF5);
+        
+        fillPaint.color = baseColor.withOpacity(0.12 * wallOpacity);
+        outlinePaint.color = baseColor.withOpacity(0.8 * wallOpacity);
+        
+        canvas.drawRRect(rrect, fillPaint);
+        canvas.drawRRect(rrect, outlinePaint);
+
+        // Draw dynamic scan lines / grid inside
+        final linePaint = Paint()
+          ..color = baseColor.withOpacity(0.3 * wallOpacity)
+          ..strokeWidth = 1.0;
+        
+        for (double ly = -cellH / 2 + 6; ly < cellH / 2 - 4; ly += 6) {
+          canvas.drawLine(Offset(-cellW / 2 + 4, ly), Offset(cellW / 2 - 4, ly), linePaint);
+        }
+      } else if (wall.type == 'crystal') {
+        // Glowing violet/pink gemstone look
+        final isPenetrated = wall.requiredLaserPower != null && laserIntensity >= wall.requiredLaserPower!;
+        final baseColor = isPenetrated ? const Color(0xFFE040FB).withOpacity(0.25) : const Color(0xFFE040FB);
+
+        fillPaint.shader = LinearGradient(
+          colors: [baseColor.withOpacity(0.7 * wallOpacity), baseColor.withOpacity(0.2 * wallOpacity)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(localRect);
+
+        outlinePaint.color = baseColor.withOpacity(0.9 * wallOpacity);
+
+        canvas.drawRRect(rrect, fillPaint);
+        canvas.drawRRect(rrect, outlinePaint);
+
+        // Draw diamond facets/cracks inside
+        final facetPaint = Paint()
+          ..color = Colors.white.withOpacity(isPenetrated ? 0.05 : 0.25 * wallOpacity)
+          ..strokeWidth = 1.0;
+        
+        canvas.drawLine(Offset(-cellW / 2 + 4, -cellH / 2 + 4), Offset(cellW / 2 - 4, cellH / 2 - 4), facetPaint);
+        canvas.drawLine(Offset(cellW / 2 - 4, -cellH / 2 + 4), Offset(-cellW / 2 + 4, cellH / 2 - 4), facetPaint);
+        canvas.drawLine(Offset(0, -cellH / 2 + 4), Offset(0, cellH / 2 - 4), facetPaint);
+      } else if (wall.type == 'scrapMetal') {
+        // Metallic copper/bronze look
+        fillPaint.shader = LinearGradient(
+          colors: [const Color(0xFFD84315).withOpacity(wallOpacity), const Color(0xFF4E342E).withOpacity(wallOpacity)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(localRect);
+
+        outlinePaint.color = const Color(0xFF3E2723).withOpacity(wallOpacity);
+
+        canvas.drawRRect(rrect, fillPaint);
+        canvas.drawRRect(rrect, outlinePaint);
+
+        // Draw mechanical plates/bolts details inside
+        final detailPaint = Paint()
+          ..color = Colors.black.withOpacity(0.3 * wallOpacity)
+          ..strokeWidth = 1.5;
+        
+        canvas.drawLine(Offset(-cellW / 2 + 4, 0), Offset(cellW / 2 - 4, 0), detailPaint);
+        canvas.drawLine(Offset(0, -cellH / 2 + 4), Offset(0, cellH / 2 - 4), detailPaint);
+        
+        // Corner bolts
+        final boltPaint = Paint()
+          ..color = Colors.black.withOpacity(0.4 * wallOpacity)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(Offset(-cellW / 3, -cellH / 3), scale * 0.02, boltPaint);
+        canvas.drawCircle(Offset(cellW / 3, -cellH / 3), scale * 0.02, boltPaint);
+        canvas.drawCircle(Offset(-cellW / 3, cellH / 3), scale * 0.02, boltPaint);
+        canvas.drawCircle(Offset(cellW / 3, cellH / 3), scale * 0.02, boltPaint);
+      } else {
+        // Standard grey rock asteroid
+        fillPaint.shader = LinearGradient(
+          colors: [const Color(0xFF222831).withOpacity(wallOpacity), const Color(0xFF393E46).withOpacity(wallOpacity), const Color(0xFF1E222B).withOpacity(wallOpacity)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(localRect);
+
+        outlinePaint.color = const Color(0xFF2D3035).withOpacity(wallOpacity);
+
+        canvas.drawRRect(rrect, fillPaint);
+        canvas.drawRRect(rrect, outlinePaint);
+
+        // Rock fissure details
+        final detailPaint = Paint()
+          ..color = Colors.black.withOpacity(0.3 * wallOpacity)
+          ..strokeWidth = 1.0;
+        canvas.drawLine(Offset(-cellW * 0.2, -cellH * 0.3), Offset(cellW * 0.2, cellH * 0.3), detailPaint);
+      }
+
+      // Draw particle shatters if destroyed
+      if (showParticles) {
+        final rand = Random(wall.gridX * 17 + wall.gridY * 31);
+        final particlePaint = Paint()..style = PaintingStyle.fill;
+        Color particleColor = const Color(0xFFE0E0E0);
+        if (wall.type == 'energyShield') {
+          particleColor = const Color(0xFF00FFF5);
+        } else if (wall.type == 'crystal') {
+          particleColor = const Color(0xFFE040FB);
+        } else if (wall.type == 'scrapMetal') {
+          particleColor = const Color(0xFFFF5722);
+        }
+
+        for (int p = 0; p < 8; p++) {
+          final angle = rand.nextDouble() * 2 * pi;
+          final dist = cellW * 0.7 * particleProgress * (0.4 + 0.6 * rand.nextDouble());
+          final px = cos(angle) * dist;
+          final py = sin(angle) * dist;
+          final pRadius = scale * 0.06 * (1.0 - particleProgress);
+          particlePaint.color = particleColor.withOpacity((1.0 - particleProgress).clamp(0.0, 1.0));
+          canvas.drawCircle(Offset(px, py), pRadius, particlePaint);
+        }
+      }
+
+      canvas.restore();
     }
 
     // 3. Draw Aiming Computer Path Preview (if in edit mode)
@@ -233,7 +368,7 @@ class BoardPainter extends CustomPainter {
         level: level,
         devices: placedDevices,
         startAngleDegrees: aimingAngle,
-        laserIntensity: 1,
+        laserIntensity: laserIntensity,
       );
 
       final previewPaint = Paint()

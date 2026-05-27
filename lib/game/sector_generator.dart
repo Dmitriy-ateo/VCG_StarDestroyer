@@ -134,7 +134,7 @@ class SectorGenerator {
 
     return LevelData(
       id: 999,
-      name: "Daily Sector: Calibrated Bends",
+      name: "Calibrated Bends",
       description: "Atmospheric dust blocks direct fire. Place reflectors at ($dsX, $y1) and ($x2, $y1) to reflect the laser around the barriers.",
       deathStarX: dsX,
       deathStarY: dsY,
@@ -194,7 +194,7 @@ class SectorGenerator {
 
     return LevelData(
       id: 999,
-      name: "Daily Sector: Dual Target Ray",
+      name: "Dual Target Ray",
       description: "Synchronized orbits detected. Mount a 180° SPLITTER on slot (3, $splitterY) and redirect the twin beams up with reflectors at (1, $splitterY) and (6, $splitterY).",
       deathStarX: dsX,
       deathStarY: dsY,
@@ -258,7 +258,7 @@ class SectorGenerator {
 
     return LevelData(
       id: 999,
-      name: "Daily Sector: Chain Blast",
+      name: "Chain Blast",
       description: "Target planets are completely shielded by an armored core. Place a volatile BOMB at (5, 4) and reflect the laser into it to detonate the entire system.",
       deathStarX: dsX,
       deathStarY: dsY,
@@ -311,7 +311,7 @@ class SectorGenerator {
 
     return LevelData(
       id: 999,
-      name: "Daily Sector: Folded Dimensions",
+      name: "Folded Dimensions",
       description: "Pre-installed Spatial Relays activated. Let the laser enter Portal A at (3, 7) to teleport to (6, 5). Use a reflector at (6, 2) to hit the target.",
       deathStarX: dsX,
       deathStarY: dsY,
@@ -358,7 +358,7 @@ class SectorGenerator {
 
     return LevelData(
       id: 999,
-      name: "Daily Sector: Gravitational Curve",
+      name: "Gravitational Curve",
       description: "Armored shields divide the sector. Place a GRAVITY WELL around (4, 6) to curve the laser beam through the gravitational slingshot onto the planet.",
       deathStarX: dsX,
       deathStarY: dsY,

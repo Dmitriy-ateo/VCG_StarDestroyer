@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/galaxy_model.dart';
 import '../models/game_progression.dart';
 import '../game/game_controller.dart';
@@ -9,12 +10,16 @@ class GalaxiesMapScreen extends StatefulWidget {
   final GameController controller;
   final Function(String) onGalaxySelected;
   final VoidCallback onBackToMenu;
+  final VoidCallback onGoToShop;
+  final VoidCallback onGoToResearch;
 
   const GalaxiesMapScreen({
     super.key,
     required this.controller,
     required this.onGalaxySelected,
     required this.onBackToMenu,
+    required this.onGoToShop,
+    required this.onGoToResearch,
   });
 
   @override
@@ -53,16 +58,18 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
 
           return SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Header Block
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
@@ -70,51 +77,77 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             const Expanded(
-                              child: Text(
-                                "GALACTIC COMMAND",
-                                style: TextStyle(
-                                  color: Color(0xFFFFFFFF),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.0,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "GALACTIC COMMAND",
+                                    style: TextStyle(
+                                      color: Color(0xFFFFFFFF),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    "COSMIC SECTOR MAPPING SYSTEM",
+                                    style: TextStyle(
+                                      color: Color(0xFF00FFF5),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.8,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      // Core Resources Chips
+                      const SizedBox(width: 12),
+                      // Core Resources Chips (Money click -> Shop, RP click -> Research Lab)
                       Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onGoToShop();
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
+                            ),
+                          ),
                           const SizedBox(width: 8),
-                          _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onGoToResearch();
+                            },
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Container(
                     height: 1,
-                    color: const Color(0xFF00ADB5).withOpacity(0.2),
+                    color: const Color(0xFF00ADB5).withOpacity(0.15),
                   ),
-                  const SizedBox(height: 16),
-
-                  const Text(
-                    "COSMIC SECTOR MAPPING SYSTEM",
-                    style: TextStyle(
-                      color: Color(0xFF00FFF5),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   // Responsive Scrolling Snake Path Layout
                   Expanded(
@@ -272,20 +305,32 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
 
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 4,
+            spreadRadius: 0.5,
+          )
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
           Text(
             text,
-            style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),

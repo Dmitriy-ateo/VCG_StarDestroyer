@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/device_model.dart';
 import '../models/game_progression.dart';
 import '../game/game_controller.dart';
@@ -6,11 +7,13 @@ import '../game/game_controller.dart';
 class ResearchShopScreen extends StatelessWidget {
   final GameController controller;
   final VoidCallback onBackToGame;
+  final VoidCallback onGoToShop;
 
   const ResearchShopScreen({
     super.key,
     required this.controller,
     required this.onBackToGame,
+    required this.onGoToShop,
   });
 
   @override
@@ -32,9 +35,11 @@ class ResearchShopScreen extends StatelessWidget {
                     // Unified One-Row Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
@@ -42,33 +47,71 @@ class ResearchShopScreen extends StatelessWidget {
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 8),
                               const Expanded(
-                                child: Text(
-                                  "R&D COMMAND CONSOLE",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.0,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "R&D COMMAND CONSOLE",
+                                      style: TextStyle(
+                                        color: Color(0xFFFFFFFF),
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      "TECHNOLOGY UPGRADE TERMINAL",
+                                      style: TextStyle(
+                                        color: Color(0xFF00FFF5),
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.8,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         // Currency Statuses
                         Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                onGoToShop();
+                              },
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: _buildStatChip(Icons.monetization_on, "${progression.credits}", Colors.amberAccent),
+                              ),
+                            ),
                             const SizedBox(width: 8),
-                            _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                              },
+                              child: _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                            ),
                           ],
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 1,
+                      color: const Color(0xFF00ADB5).withOpacity(0.15),
                     ),
                     const SizedBox(height: 12),
                     
@@ -247,23 +290,31 @@ class ResearchShopScreen extends StatelessWidget {
 
   Widget _buildStatChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF161B22),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.4), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.06),
+            blurRadius: 4,
+            spreadRadius: 0.5,
+          )
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
           Text(
             text,
             style: TextStyle(
               color: color,
               fontSize: 10.5,
               fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -337,7 +388,9 @@ class ResearchShopScreen extends StatelessWidget {
                       onPressed: canBuy
                           ? () {
                               controller.buyUpgrade(upgradeType);
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              final messenger = ScaffoldMessenger.of(context);
+                              messenger.clearSnackBars();
+                              messenger.showSnackBar(
                                 SnackBar(content: Text("Upgraded $title successfully!")),
                               );
                             }
@@ -415,7 +468,9 @@ class ResearchShopScreen extends StatelessWidget {
                   onPressed: canResearch
                       ? () {
                           controller.unlockDeviceBlueprint(type);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.clearSnackBars();
+                          messenger.showSnackBar(
                             SnackBar(content: Text("Unlocked $title Blueprints!")),
                           );
                         }
@@ -487,7 +542,9 @@ class ResearchShopScreen extends StatelessWidget {
                   onPressed: canResearch
                       ? () {
                           controller.unlockSplitterVariant(angle);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.clearSnackBars();
+                          messenger.showSnackBar(
                             SnackBar(content: Text("Unlocked $title Blueprints!")),
                           );
                         }
