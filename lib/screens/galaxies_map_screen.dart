@@ -235,6 +235,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
 
                                           return Stack(
                                             alignment: Alignment.center,
+                                            clipBehavior: Clip.none,
                                             children: [
                                               // Outer Glowing Halo
                                               Container(
