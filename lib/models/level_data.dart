@@ -11,6 +11,7 @@ class PlanetTarget {
   final String name;
   final Color color;
   bool isDestroyed;
+  final int? requiredLaserPower; // Power level needed to destroy/penetrate it.
 
   PlanetTarget({
     required this.id,
@@ -20,6 +21,7 @@ class PlanetTarget {
     required this.name,
     required this.color,
     this.isDestroyed = false,
+    this.requiredLaserPower,
   });
 
   PlanetTarget copyWith({
@@ -30,6 +32,7 @@ class PlanetTarget {
     String? name,
     Color? color,
     bool? isDestroyed,
+    int? requiredLaserPower,
   }) {
     return PlanetTarget(
       id: id ?? this.id,
@@ -39,6 +42,7 @@ class PlanetTarget {
       name: name ?? this.name,
       color: color ?? this.color,
       isDestroyed: isDestroyed ?? this.isDestroyed,
+      requiredLaserPower: requiredLaserPower ?? this.requiredLaserPower,
     );
   }
 
@@ -51,6 +55,7 @@ class PlanetTarget {
       name: json['name'] as String,
       color: Color(int.parse(json['color'] as String)),
       isDestroyed: json['isDestroyed'] as bool? ?? false,
+      requiredLaserPower: json['requiredLaserPower'] as int?,
     );
   }
 }

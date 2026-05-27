@@ -168,25 +168,50 @@ class LaserCalculator {
         }
 
         // 3. Planet collision check
-        String? hitPlanetId;
+        bool isBlockedByPlanet = false;
+
         for (var planet in level.planets) {
-          if (planet.isDestroyed || hitPlanetIds.contains(planet.id)) continue;
+          if (planet.isDestroyed || beam.visitedDevices.contains(planet.id)) continue;
+          
           final planetCenter = Offset(planet.gridX + 0.5, planet.gridY + 0.5);
           final dist = (beam.pos - planetCenter).distance;
+          
           if (dist < 0.4) {
-            hitPlanetId = planet.id;
-            hitPlanetIds.add(planet.id);
-            explosions.add(ExplosionEvent(
-              gridPos: planetCenter,
-              stepIndex: step,
-              radius: 1.0,
-              targetId: planet.id,
-              isBomb: false,
-            ));
-            break;
+            final reqPower = planet.requiredLaserPower ?? 1;
+
+            if (beam.intensity < reqPower) {
+              // Case 1: Blocked completely (Laser intensity too low).
+              isBlockedByPlanet = true;
+              break;
+            } else if (beam.intensity == reqPower) {
+              // Case 2: Hits, destroys, and terminates (matching power).
+              hitPlanetIds.add(planet.id);
+              explosions.add(ExplosionEvent(
+                gridPos: planetCenter,
+                stepIndex: step,
+                radius: 1.0,
+                targetId: planet.id,
+                isBomb: false,
+              ));
+              isBlockedByPlanet = true;
+              break;
+            } else {
+              // Case 3: Hits, destroys, loses 1 intensity, and continues/penetrates!
+              hitPlanetIds.add(planet.id);
+              explosions.add(ExplosionEvent(
+                gridPos: planetCenter,
+                stepIndex: step,
+                radius: 1.0,
+                targetId: planet.id,
+                isBomb: false,
+              ));
+              beam.visitedDevices.add(planet.id);
+              beam.intensity--;
+              // Do not set hitPlanetId or isBlockedByPlanet, allowing the beam to propagate forward!
+            }
           }
         }
-        if (hitPlanetId != null) {
+        if (isBlockedByPlanet) {
           beam.isAlive = false;
           finalizedPaths.add(beam.path);
           continue;

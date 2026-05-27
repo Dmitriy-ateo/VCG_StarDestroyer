@@ -64,7 +64,20 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     // 1. Check Planets
     for (var planet in widget.controller.currentLevel.planets) {
       if (planet.gridX == x && planet.gridY == y) {
-        text = "🪐 [Planet: ${planet.name}]\nTarget rebel base. Direct the superlaser here to destroy it.";
+        final reqPower = planet.requiredLaserPower ?? 1;
+        if (reqPower > 1) {
+          final isSufficient = widget.controller.progression.laserIntensityLevel >= reqPower;
+          final statusText = isSufficient 
+              ? "⚠️ PENETRATED (Laser Power >= $reqPower)" 
+              : "❌ BLOCKED (Requires Laser Power $reqPower)";
+          text = "🪐 [Shielded Planet: ${planet.name}]\n$statusText\nDefense Level: $reqPower. Laser power decreases by 1 on penetration (if Laser Power > $reqPower).";
+        } else {
+          final canPenetrate = widget.controller.progression.laserIntensityLevel > 1;
+          final statusText = canPenetrate
+              ? "⚠️ PENETRATED (Laser Power > 1, will pass through)"
+              : "🎯 DESTROYED (Laser Power = 1, will absorb)";
+          text = "🪐 [Planet: ${planet.name}]\n$statusText\nDirect the superlaser here to destroy it. If Laser Power > 1, it will penetrate and continue propagating (losing 1 power).";
+        }
         break;
       }
     }

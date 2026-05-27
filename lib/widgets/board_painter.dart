@@ -685,6 +685,50 @@ class BoardPainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, scale * 0.1);
       canvas.drawCircle(center, radius + scale * 0.08, glowPaint);
 
+      // Draw dynamic tech-shield sector rings around shielded planets
+      if (planet.requiredLaserPower != null && planet.requiredLaserPower! > 1) {
+        final shieldPower = planet.requiredLaserPower!;
+        final shieldColor = (shieldPower == 2) ? const Color(0xFF00FFF5) : const Color(0xFFFF2E93);
+        final pulse = 1.0 + 0.06 * sin(bgAnimationValue * 2 * pi * 2);
+
+        // 1. Draw glowing background circle
+        final shieldBgPaint = Paint()
+          ..color = shieldColor.withOpacity(0.08)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(center, radius * 1.25 * pulse, shieldBgPaint);
+
+        // 2. Draw outer boundary circular shield rings
+        final shieldBorderPaint = Paint()
+          ..color = shieldColor.withOpacity(0.35)
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
+        canvas.drawCircle(center, radius * 1.25 * pulse, shieldBorderPaint);
+
+        final shieldOuterBorderPaint = Paint()
+          ..color = shieldColor.withOpacity(0.12)
+          ..strokeWidth = 0.8
+          ..style = PaintingStyle.stroke;
+        canvas.drawCircle(center, radius * 1.35 * pulse, shieldOuterBorderPaint);
+
+        // 3. Draw N orbiting sector ticks representing active shield sectors
+        final tickPaint = Paint()
+          ..color = shieldColor.withOpacity(0.85)
+          ..strokeWidth = 2.5
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round;
+
+        for (int t = 0; t < shieldPower; t++) {
+          final startAngle = (bgAnimationValue * 2 * pi * 0.25) + t * (2 * pi / shieldPower);
+          canvas.drawArc(
+            Rect.fromCircle(center: center, radius: radius * 1.25 * pulse),
+            startAngle,
+            0.5,
+            false,
+            tickPaint,
+          );
+        }
+      }
+
       // Draw planet body with spherical radial gradient
       final bodyPaint = Paint()
         ..shader = RadialGradient(
