@@ -223,14 +223,14 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                       child: AnimatedBuilder(
                                         animation: _animationController,
                                         builder: (context, child) {
-                                          final double angle = _animationController.value * 2.0 * pi;
+                                          const double angle = -pi / 2; // Fixed at the top center of its orbit ring
                                           final double orbitRadius = nodeSize * 0.46;
                                           final double dx = orbitRadius * cos(angle);
                                           final double dy = orbitRadius * sin(angle);
                                           final double px = nodeSize / 2 + dx;
                                           final double py = nodeSize / 2 + dy;
 
-                                          // Pulse the lore icon scale (2 cycles per orbit rotation)
+                                          // Pulse the lore icon scale (2 cycles per animation rotation)
                                           final double pulseScale = 1.0 + 0.12 * sin(_animationController.value * 2.0 * pi * 2.0);
 
                                           return Stack(
