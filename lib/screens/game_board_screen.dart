@@ -142,17 +142,27 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   }
 
   String _getDeviceDescription(DeviceModel dev) {
+    final level = widget.controller.progression.deviceLevels[dev.type] ?? 1;
+
     switch (dev.type) {
       case DeviceType.reflector:
-        return "🪞 [Reflector]\nBounces the laser at 90° angles. Tap to rotate.";
+        return "🪞 [Reflector - Level $level]\nBounces the laser at 90° angles. Tap to rotate.";
       case DeviceType.splitter:
-        return "📐 [Splitter (${dev.splitAngleDegrees?.toStringAsFixed(0)}°)]\nSplits the incoming laser into twin beams. Tap to rotate.";
+        final status = (level == 1) 
+            ? "⚠️ UNSTABLE: Drains 1 laser power on bifurcation." 
+            : "✓ STABLE: Lossless splitting.";
+        return "📐 [Splitter (${dev.splitAngleDegrees?.toStringAsFixed(0)}°) - Level $level]\n$status\nSplits the laser into twin beams. Tap to rotate.";
       case DeviceType.portal:
-        return "🌀 [Quantum Portal]\nTeleports the incoming laser beam instantly to its paired portal.";
+        final status = (level == 1) 
+            ? "⚠️ UNSTABLE: Drains 1 laser power on teleportation." 
+            : "✓ STABLE: Lossless teleportation.";
+        return "🌀 [Quantum Portal - Level $level]\n$status\nTeleports the laser instantly to its paired portal.";
       case DeviceType.gravityWell:
-        return "🕳️ [Gravity Well]\nGenerates a gravity pull that continuously curves the laser beam path.";
+        final range = (2.5 + 0.3 * level).toStringAsFixed(1);
+        final pull = (0.10 + 0.03 * level).toStringAsFixed(2);
+        return "🕳️ [Gravity Well - Level $level]\nAttraction Range: $range units. Pull Strength: $pull.\nContinuously curves the laser beam path.";
       case DeviceType.bomb:
-        return "💣 [Tactical Bomb]\nDetonates in a 2.2-unit radius when hit, destroying all nearby planets.";
+        return "💣 [Tactical Bomb - Level $level]\nExplosion radius: 2.2 units.\nDetonates on hit. Can destroy shielded planets up to Defense Level $level.";
     }
   }
 
@@ -571,6 +581,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                           bgAnimationValue: _bgAnimationController.value,
                           aimAnimationValue: _aimAnimationController.value,
                           laserIntensity: widget.controller.progression.laserIntensityLevel,
+                          deviceLevels: widget.controller.progression.deviceLevels,
                         ),
                         child: Container(),
                       ),

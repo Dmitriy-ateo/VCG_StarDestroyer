@@ -270,6 +270,7 @@ class GameController extends ChangeNotifier {
       devices: placedDevices,
       startAngleDegrees: aimingAngle,
       laserIntensity: progression.laserIntensityLevel,
+      deviceLevels: progression.deviceLevels,
     );
 
     notifyListeners();
@@ -432,6 +433,19 @@ class GameController extends ChangeNotifier {
   bool unlockSplitterVariant(double angle) {
     final unlocked = progression.unlockSplitterAngle(angle);
     if (unlocked) {
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  bool upgradeDevice(DeviceType type) {
+    if (!progression.unlockedDevices.contains(type)) return false;
+    final currentLvl = progression.deviceLevels[type] ?? 1;
+    final cost = GameProgression.getDeviceUpgradeCost(type, currentLvl);
+    if (cost > 0 && progression.researchPoints >= cost) {
+      progression.researchPoints -= cost;
+      progression.deviceLevels[type] = currentLvl + 1;
       notifyListeners();
       return true;
     }

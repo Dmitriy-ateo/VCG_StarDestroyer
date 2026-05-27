@@ -14,6 +14,7 @@ class GameProgression {
   int laserIntensityLevel; // 1 to 5
   int aimingComputerLevel; // 1 to 10 (each adds 10% preview length, 10 = 100% full preview)
   int chassisCapacityLevel; // 1 to 5 (bonus inventory slots)
+  Map<DeviceType, int> deviceLevels; // Researched device tech levels (1 to 5)
 
   GameProgression({
     this.credits = 100,
@@ -27,6 +28,7 @@ class GameProgression {
     this.laserIntensityLevel = 1,
     this.aimingComputerLevel = 1, // Start with aiming preview enabled level 1
     this.chassisCapacityLevel = 1,
+    Map<DeviceType, int>? deviceLevels,
   })  : completedLevelIds = completedLevelIds ?? {},
         unlockedDevices = unlockedDevices ?? {DeviceType.reflector},
         unlockedSplitterAngles = unlockedSplitterAngles ?? {180.0},
@@ -41,6 +43,13 @@ class GameProgression {
           'splitter_90': 0,
           'splitter_135': 0,
           'splitter_45': 0,
+        },
+        deviceLevels = deviceLevels ?? {
+          DeviceType.reflector: 1,
+          DeviceType.splitter: 1,
+          DeviceType.bomb: 1,
+          DeviceType.gravityWell: 1,
+          DeviceType.portal: 1,
         };
 
   // Clone progression
@@ -57,6 +66,7 @@ class GameProgression {
       laserIntensityLevel: laserIntensityLevel,
       aimingComputerLevel: aimingComputerLevel,
       chassisCapacityLevel: chassisCapacityLevel,
+      deviceLevels: Map.from(deviceLevels),
     );
   }
 
@@ -93,6 +103,12 @@ class GameProgression {
       default:
         return 9999;
     }
+  }
+
+  // Device technology upgrade costs in RP
+  static int getDeviceUpgradeCost(DeviceType type, int currentLevel) {
+    if (currentLevel >= 5) return -1; // Max Level 5
+    return currentLevel * 40; // level 1->2 is 40 RP, 2->3 is 80 RP, 3->4 is 120 RP, 4->5 is 160 RP
   }
 
   static int getDeviceResearchCost(DeviceType type) {

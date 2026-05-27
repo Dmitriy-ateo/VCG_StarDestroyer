@@ -248,6 +248,24 @@ class ResearchShopScreen extends StatelessWidget {
                                 // Other devices
                                 _buildDeviceResearchCard(
                                   context: context,
+                                  title: "Standard Deflector Reflector",
+                                  description: "High-grade glass deflector mirror reflecting laser rays at 90° angles.",
+                                  type: DeviceType.reflector,
+                                  cost: GameProgression.getDeviceResearchCost(DeviceType.reflector),
+                                  isUnlocked: progression.unlockedDevices.contains(DeviceType.reflector),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildDeviceResearchCard(
+                                  context: context,
+                                  title: "Dual Prism Splitter Core",
+                                  description: "Prismatic splitter core. Stabilizes splitting to prevent beam attenuation at Level 2+.",
+                                  type: DeviceType.splitter,
+                                  cost: GameProgression.getDeviceResearchCost(DeviceType.splitter),
+                                  isUnlocked: progression.unlockedDevices.contains(DeviceType.splitter),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildDeviceResearchCard(
+                                  context: context,
                                   title: "Anti-Matter Trigger Bomb",
                                   description: "Proximity explosives reacting violently with high-charge lasers.",
                                   type: DeviceType.bomb,
@@ -423,7 +441,11 @@ class ResearchShopScreen extends StatelessWidget {
     required int cost,
     required bool isUnlocked,
   }) {
-    final canResearch = !isUnlocked && controller.progression.researchPoints >= cost;
+    final progression = controller.progression;
+    final currentLvl = progression.deviceLevels[type] ?? 1;
+    final upgradeCost = GameProgression.getDeviceUpgradeCost(type, currentLvl);
+    final canResearch = !isUnlocked && progression.researchPoints >= cost;
+    final canUpgrade = isUnlocked && upgradeCost > 0 && progression.researchPoints >= upgradeCost;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -432,39 +454,93 @@ class ResearchShopScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isUnlocked ? Colors.purpleAccent.withOpacity(0.4) : const Color(0xFF393E46)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isUnlocked ? Colors.purpleAccent.withOpacity(0.1) : const Color(0xFF222831),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: _buildDeviceIcon(type, isUnlocked ? Colors.purpleAccent : Colors.grey),
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isUnlocked ? Colors.purpleAccent.withOpacity(0.1) : const Color(0xFF222831),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _buildDeviceIcon(type, isUnlocked ? Colors.purpleAccent : Colors.grey),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text(description, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (isUnlocked) ...[
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(description, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                Row(
+                  children: [
+                    const Text("TECH LVL: ", style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 6),
+                    ...List.generate(5, (index) {
+                      final active = index < currentLvl;
+                      return Container(
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: BoxDecoration(
+                          color: active ? Colors.purpleAccent : Colors.transparent,
+                          border: Border.all(color: Colors.purpleAccent, width: 1.2),
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                upgradeCost > 0
+                    ? ElevatedButton(
+                        onPressed: canUpgrade
+                            ? () {
+                                controller.upgradeDevice(type);
+                                final messenger = ScaffoldMessenger.of(context);
+                                messenger.clearSnackBars();
+                                messenger.showSnackBar(
+                                  SnackBar(content: Text("Upgraded $title to Level ${currentLvl + 1}!")),
+                                );
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.purpleAccent.withOpacity(0.2),
+                          foregroundColor: Colors.purpleAccent,
+                          disabledBackgroundColor: const Color(0xFF222831),
+                          disabledForegroundColor: Colors.grey,
+                          side: BorderSide(color: canUpgrade ? Colors.purpleAccent : Colors.transparent),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text("UPGRADE: $upgradeCost RP", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      )
+                    : const Text(
+                        "MAX TECH LEVEL",
+                        style: TextStyle(color: Colors.purpleAccent, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          
-          isUnlocked
-              ? const Column(
-                  children: [
-                    Icon(Icons.verified, color: Colors.purpleAccent, size: 24),
-                    SizedBox(height: 4),
-                    Text("RESEARCHED", style: TextStyle(color: Colors.purpleAccent, fontSize: 9, fontWeight: FontWeight.bold)),
-                  ],
-                )
-              : ElevatedButton(
+          ] else ...[
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
                   onPressed: canResearch
                       ? () {
                           controller.unlockDeviceBlueprint(type);
@@ -480,9 +556,15 @@ class ResearchShopScreen extends StatelessWidget {
                     foregroundColor: Colors.purpleAccent,
                     disabledBackgroundColor: const Color(0xFF222831),
                     disabledForegroundColor: Colors.grey,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text("$cost RP"),
+                  child: Text("RESEARCH: $cost RP", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
+              ],
+            ),
+          ],
         ],
       ),
     );

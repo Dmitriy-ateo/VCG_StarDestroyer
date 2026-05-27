@@ -82,6 +82,7 @@ class LaserCalculator {
     required List<DeviceModel> devices,
     required double startAngleDegrees,
     required int laserIntensity, // Upgrades affect range/intensity
+    required Map<DeviceType, int> deviceLevels, // Device tech levels
   }) {
     final startRad = startAngleDegrees * pi / 180.0;
     final startPos = Offset(level.deathStarX + 0.5, level.deathStarY + 0.5);
@@ -279,17 +280,24 @@ class LaserCalculator {
                 beam.path[beam.path.length - 1] = devCenter;
               }
 
+              // Optical prism splitting efficiency upgrade impact
+              final splitterLevel = deviceLevels[DeviceType.splitter] ?? 1;
+              final nextIntensity = (splitterLevel == 1) ? (beam.intensity - 1) : beam.intensity;
+
               // Create a second beam going in direction 2 with copied path history
               nextBeams.add(LaserBeam(
                 pos: devCenter,
                 dir: dir2,
                 path: List.from(beam.path),
                 visitedDevices: Set.from(beam.visitedDevices),
-                intensity: beam.intensity,
+                intensity: nextIntensity,
               ));
 
               // Redirect the original beam to direction 1
               beam.dir = dir1;
+              if (splitterLevel == 1) {
+                beam.intensity--;
+              }
             } 
             else if (dev.type == DeviceType.bomb) {
               if (!explodedBombIds.contains(dev.id)) {
@@ -303,20 +311,25 @@ class LaserCalculator {
                   isBomb: true,
                 ));
 
-                // Detonate any planets in the explosion radius!
+                // Detonate any planets in the explosion radius depending on bomb level vs shield power!
+                final bombLevel = deviceLevels[DeviceType.bomb] ?? 1;
                 for (var planet in level.planets) {
                   final pCenter = Offset(planet.gridX + 0.5, planet.gridY + 0.5);
                   final expDist = (devCenter - pCenter).distance;
                   if (expDist < 2.2) {
-                    if (!hitPlanetIds.contains(planet.id)) {
-                      hitPlanetIds.add(planet.id);
-                      explosions.add(ExplosionEvent(
-                        gridPos: pCenter,
-                        stepIndex: step + 5, // Explodes shortly after the bomb
-                        radius: 1.0,
-                        targetId: planet.id,
-                        isBomb: false,
-                      ));
+                    final reqPower = planet.requiredLaserPower ?? 1;
+                    // Bomb must have high enough level to detonate the planet's shield!
+                    if (bombLevel >= reqPower) {
+                      if (!hitPlanetIds.contains(planet.id)) {
+                        hitPlanetIds.add(planet.id);
+                        explosions.add(ExplosionEvent(
+                          gridPos: pCenter,
+                          stepIndex: step + 5, // Explodes shortly after the bomb
+                          radius: 1.0,
+                          targetId: planet.id,
+                          isBomb: false,
+                        ));
+                      }
                     }
                   }
                 }
@@ -341,6 +354,12 @@ class LaserCalculator {
                 // Teleport to paired portal center
                 beam.pos = pairCenter;
                 beam.visitedDevices.add(pair.id); // Don't re-trigger immediately
+
+                // Teleportation field stabilization upgrade impact
+                final portalLevel = deviceLevels[DeviceType.portal] ?? 1;
+                if (portalLevel == 1) {
+                  beam.intensity--; // Unstable Level 1 portal drains 1 laser power!
+                }
               }
             }
           }
@@ -361,10 +380,13 @@ class LaserCalculator {
           final distSq = diff.dx * diff.dx + diff.dy * diff.dy;
           final dist = sqrt(distSq);
 
-          if (dist > 0.1 && dist < 3.5) {
+          // Singularity gravitational active range and pull strength upgrades
+          final wellLevel = deviceLevels[DeviceType.gravityWell] ?? 1;
+          final range = 2.5 + 0.3 * wellLevel;
+          final strength = 0.10 + 0.03 * wellLevel;
+
+          if (dist > 0.1 && dist < range) {
             // Apply gravity pulling force: Force = G / (dist^2)
-            // Scale G based on upgrade levels or standard strength (0.1)
-            final strength = 0.15;
             final force = diff / (distSq * dist) * strength;
             
             // Accelerate direction vector

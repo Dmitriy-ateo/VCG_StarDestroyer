@@ -17,6 +17,7 @@ class BoardPainter extends CustomPainter {
   final double bgAnimationValue;
   final double aimAnimationValue;
   final int laserIntensity;
+  final Map<DeviceType, int> deviceLevels;
 
   BoardPainter({
     required this.level,
@@ -30,6 +31,7 @@ class BoardPainter extends CustomPainter {
     required this.bgAnimationValue,
     this.aimAnimationValue = 0.0,
     required this.laserIntensity,
+    required this.deviceLevels,
   });
 
   @override
@@ -566,6 +568,7 @@ class BoardPainter extends CustomPainter {
         devices: placedDevices,
         startAngleDegrees: aimingAngle,
         laserIntensity: laserIntensity,
+        deviceLevels: deviceLevels,
       );
 
       final previewPaint = Paint()
