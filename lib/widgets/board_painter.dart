@@ -315,36 +315,40 @@ class BoardPainter extends CustomPainter {
         canvas.drawCircle(Offset(-cellW / 3, cellH / 3), scale * 0.02, boltPaint);
         canvas.drawCircle(Offset(cellW / 3, cellH / 3), scale * 0.02, boltPaint);
       } else if (wall.type == 'spaceLitter') {
-        // Space Debris / Trash look (Requires same laser power as Energy Shield)
+        // Space Debris / Trash look (Weakest obstacle, several items in a cell with NO borders)
         final isPenetrated = wall.requiredLaserPower != null && laserIntensity >= wall.requiredLaserPower!;
-        final baseColor = isPenetrated ? const Color(0xFF00FF87).withOpacity(0.25) : const Color(0xFF00FF87);
+        final baseColor = isPenetrated ? const Color(0xFF00FF87).withOpacity(0.2) : const Color(0xFF00FF87);
 
-        fillPaint.shader = LinearGradient(
-          colors: [baseColor.withOpacity(0.4 * wallOpacity), const Color(0xFF2D3748).withOpacity(0.8 * wallOpacity)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ).createShader(localRect);
-
-        outlinePaint.color = baseColor.withOpacity(0.8 * wallOpacity);
-
-        canvas.drawRRect(rrect, fillPaint);
-        canvas.drawRRect(rrect, outlinePaint);
-
-        // Draw multiple random messy floating debris shards/particles inside
+        // Draw multiple random messy floating debris shards/particles inside with NO outline/background container
         final shardPaint = Paint()
-          ..color = baseColor.withOpacity(isPenetrated ? 0.1 : 0.6 * wallOpacity)
+          ..color = baseColor.withOpacity(isPenetrated ? 0.15 : 0.75 * wallOpacity)
           ..style = PaintingStyle.fill;
 
-        // Draw 3 small random polygons/shards inside the cell
-        canvas.drawCircle(Offset(-cellW * 0.2, -cellH * 0.1), scale * 0.025, shardPaint);
-        canvas.drawCircle(Offset(cellW * 0.15, -cellH * 0.25), scale * 0.02, shardPaint);
+        // Draw 5 scattered geometric space-dust/debris shapes
+        // 1. Top Left circular piece
+        canvas.drawCircle(Offset(-cellW * 0.28, -cellH * 0.24), scale * 0.024, shardPaint);
         
-        final path = Path()
-          ..moveTo(-cellW * 0.25, cellH * 0.2)
-          ..lineTo(cellW * 0.2, cellH * 0.1)
-          ..lineTo(0, cellH * 0.3)
+        // 2. Top Right tiny piece
+        canvas.drawCircle(Offset(cellW * 0.24, -cellH * 0.18), scale * 0.016, shardPaint);
+        
+        // 3. Middle Left small fragment
+        canvas.drawCircle(Offset(-cellW * 0.20, cellH * 0.04), scale * 0.012, shardPaint);
+
+        // 4. Center-Bottom triangular piece
+        final path1 = Path()
+          ..moveTo(-cellW * 0.15, cellH * 0.22)
+          ..lineTo(cellW * 0.12, cellH * 0.14)
+          ..lineTo(-cellW * 0.02, cellH * 0.32)
           ..close();
-        canvas.drawPath(path, shardPaint);
+        canvas.drawPath(path1, shardPaint);
+
+        // 5. Right-Bottom tiny rectangular shard
+        final path2 = Path()
+          ..moveTo(cellW * 0.18, cellH * 0.16)
+          ..lineTo(cellW * 0.32, cellH * 0.08)
+          ..lineTo(cellW * 0.26, cellH * 0.24)
+          ..close();
+        canvas.drawPath(path2, shardPaint);
       } else {
         // Standard grey rock asteroid
         fillPaint.shader = LinearGradient(

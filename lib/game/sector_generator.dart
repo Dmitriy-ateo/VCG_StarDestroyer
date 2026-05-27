@@ -469,7 +469,7 @@ class SectorGenerator {
           reqPower = 2;
         } else if (rand < 0.70) {
           wallType = 'spaceLitter';
-          reqPower = 2;
+          reqPower = 1;
         }
 
         walls.add(WallBlock(
