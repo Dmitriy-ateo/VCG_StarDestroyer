@@ -26,12 +26,18 @@ class GalaxiesMapScreen extends StatefulWidget {
   State<GalaxiesMapScreen> createState() => _GalaxiesMapScreenState();
 }
 
-class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
+class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8), // Slow, elegant orbital speed
+    )..repeat();
+
     // Scroll automatically to the bottom on load to highlight the latest active unlocked galaxy
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -43,6 +49,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -213,76 +220,107 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
                                     height: nodeSize,
                                     child: GestureDetector(
                                       onTap: () => _showGalaxyTravelModal(context, galaxy, isUnlocked, progression),
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          // Outer Glowing Halo
-                                          Container(
-                                            width: nodeSize * 0.85,
-                                            height: nodeSize * 0.85,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: (isUnlocked
-                                                      ? const Color(0xFF00ADB5)
-                                                      : Colors.redAccent).withOpacity(0.08),
-                                                  blurRadius: 20,
-                                                  spreadRadius: 2,
-                                                )
-                                              ],
-                                            ),
-                                          ),
-                                          
-                                          // Procedural Custom Painted Disk
-                                          SizedBox(
-                                            width: nodeSize * 0.95,
-                                            height: nodeSize * 0.95,
-                                            child: RepaintBoundary(
-                                              child: CustomPaint(
-                                                painter: _buildGalaxyPainter(galaxy.id, isUnlocked),
-                                              ),
-                                            ),
-                                          ),
+                                      child: AnimatedBuilder(
+                                        animation: _animationController,
+                                        builder: (context, child) {
+                                          final double angle = _animationController.value * 2.0 * pi;
+                                          final double orbitRadius = nodeSize * 0.46;
+                                          final double dx = orbitRadius * cos(angle);
+                                          final double dy = orbitRadius * sin(angle);
+                                          final double px = nodeSize / 2 + dx;
+                                          final double py = nodeSize / 2 + dy;
 
-                                          // Central Status Center Icon Badge
-                                          _buildCenterIconBadge(isUnlocked, isCompleted),
+                                          // Pulse the lore icon scale (2 cycles per orbit rotation)
+                                          final double pulseScale = 1.0 + 0.12 * sin(_animationController.value * 2.0 * pi * 2.0);
 
-                                          // Active Lore Guidance Indicator Badge
-                                          if (isTargetLoreGalaxy && isUnlocked)
-                                            Positioned(
-                                              top: nodeSize * 0.08,
-                                              right: nodeSize * 0.08,
-                                              child: _buildLoreGuidanceBadge(),
-                                            ),
-
-                                          // Floating Galaxy Tag Banner (Underneath Node)
-                                          Positioned(
-                                            bottom: 0,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF161B22).withOpacity(0.85),
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(
-                                                  color: isUnlocked
-                                                      ? const Color(0xFF00ADB5).withOpacity(0.3)
-                                                      : Colors.redAccent.withOpacity(0.2),
-                                                  width: 1.0,
+                                          return Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              // Outer Glowing Halo
+                                              Container(
+                                                width: nodeSize * 0.85,
+                                                height: nodeSize * 0.85,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: (isUnlocked
+                                                          ? const Color(0xFF00ADB5)
+                                                          : Colors.redAccent).withOpacity(0.08),
+                                                      blurRadius: 20,
+                                                      spreadRadius: 2,
+                                                    )
+                                                  ],
                                                 ),
                                               ),
-                                              child: Text(
-                                                galaxy.name.toUpperCase(),
-                                                style: TextStyle(
-                                                  color: isUnlocked ? const Color(0xFFFFFFFF) : Colors.grey,
-                                                  fontSize: 8,
-                                                  fontWeight: FontWeight.bold,
-                                                  letterSpacing: 0.5,
+                                              
+                                              // Procedural Custom Painted Disk
+                                              SizedBox(
+                                                width: nodeSize * 0.95,
+                                                height: nodeSize * 0.95,
+                                                child: RepaintBoundary(
+                                                  child: CustomPaint(
+                                                    painter: _buildGalaxyPainter(galaxy.id, isUnlocked),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                        ],
+
+                                              // Active Lore Guidance Orbit Ring
+                                              if (isTargetLoreGalaxy && isUnlocked)
+                                                Positioned.fill(
+                                                  child: CustomPaint(
+                                                    painter: _LoreOrbitPainter(
+                                                      orbitRadius: orbitRadius,
+                                                      themeColor: const Color(0xFF00FFF5),
+                                                    ),
+                                                  ),
+                                                ),
+
+                                              // Central Status Center Icon Badge
+                                              _buildCenterIconBadge(isUnlocked, isCompleted),
+
+                                              // Active Lore Guidance Indicator Badge (orbiting dynamically)
+                                              if (isTargetLoreGalaxy && isUnlocked)
+                                                Positioned(
+                                                  left: px - 17.0, // Centered on coordinate (badge size 34 / 2)
+                                                  top: py - 17.0,
+                                                  width: 34.0,
+                                                  height: 34.0,
+                                                  child: Transform.scale(
+                                                    scale: pulseScale,
+                                                    child: _buildLoreGuidanceBadge(),
+                                                  ),
+                                                ),
+
+                                              // Floating Galaxy Tag Banner (Underneath Node)
+                                              Positioned(
+                                                bottom: 0,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF161B22).withOpacity(0.85),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: isUnlocked
+                                                          ? const Color(0xFF00ADB5).withOpacity(0.3)
+                                                          : Colors.redAccent.withOpacity(0.2),
+                                                      width: 1.0,
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    galaxy.name.toUpperCase(),
+                                                    style: TextStyle(
+                                                      color: isUnlocked ? const Color(0xFFFFFFFF) : Colors.grey,
+                                                      fontSize: 8,
+                                                      fontWeight: FontWeight.bold,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
                                   );
@@ -362,24 +400,24 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> {
 
   Widget _buildLoreGuidanceBadge() {
     return Container(
-      width: 24,
-      height: 24,
+      width: 34,
+      height: 34,
       decoration: BoxDecoration(
-        color: const Color(0xFF0B0E14).withOpacity(0.9),
+        color: const Color(0xFF0B0E14).withOpacity(0.95),
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF00FFF5), width: 1.5),
+        border: Border.all(color: const Color(0xFF00FFF5), width: 1.8),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00FFF5).withOpacity(0.4),
-            blurRadius: 8,
-            spreadRadius: 1,
+            color: const Color(0xFF00FFF5).withOpacity(0.55),
+            blurRadius: 10,
+            spreadRadius: 1.5,
           ),
         ],
       ),
       child: const Icon(
         Icons.explore,
         color: Color(0xFF00FFF5),
-        size: 13,
+        size: 18,
       ),
     );
   }
@@ -974,4 +1012,52 @@ class _OuterHorizonPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ------------------------------------------------------------------
+// Custom Orbit Painter for the active Lore Guidance Badge
+// ------------------------------------------------------------------
+
+class _LoreOrbitPainter extends CustomPainter {
+  final double orbitRadius;
+  final Color themeColor;
+
+  _LoreOrbitPainter({
+    required this.orbitRadius,
+    required this.themeColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2.0, size.height / 2.0);
+    final paint = Paint()
+      ..color = themeColor.withOpacity(0.18) // Subtle glowing cyan
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+
+    // Draw a dashed circle for the lore orbit
+    final path = Path()..addOval(Rect.fromCircle(center: center, radius: orbitRadius));
+    _drawDashedPath(canvas, path, paint);
+  }
+
+  void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
+    const dashWidth = 5.0;
+    const dashSpace = 4.0;
+
+    final PathMetrics pathMetrics = path.computeMetrics();
+    for (PathMetric metric in pathMetrics) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final double length = min(dashWidth, metric.length - distance);
+        final Path extract = metric.extractPath(distance, distance + length);
+        canvas.drawPath(extract, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LoreOrbitPainter oldDelegate) {
+    return oldDelegate.orbitRadius != orbitRadius || oldDelegate.themeColor != themeColor;
+  }
 }
