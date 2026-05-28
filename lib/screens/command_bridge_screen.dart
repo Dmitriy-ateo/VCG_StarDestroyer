@@ -246,6 +246,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
         listenable: widget.controller,
         builder: (context, _) {
           return Stack(
+            clipBehavior: Clip.none,
             children: [
               // Captain Bridge visual background image - Full Screen
               Positioned.fill(
@@ -263,6 +264,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                     final h = constraints.maxHeight;
 
                     return Stack(
+                      clipBehavior: Clip.none,
                       children: [
                         // Tactical Market (Left Sliding Door)
                         _buildHotspot(
@@ -275,12 +277,13 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                           left: w * 0.06,
                           top: h * 0.30,
                           width: w * 0.22,
-                          height: h * 0.30,
+                          height: h * 0.48, // Increased from 0.30 to cover the door frame down to 0.78
                           centerOffset: const Offset(0.0, 0.0),
                           onTap: () {
                             _triggerHaptic();
                             widget.onOpenMarket();
                           },
+                          screenWidth: w,
                         ),
 
                         // Tactical Briefing (Bottom-Left Desk)
@@ -297,6 +300,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                           height: h * 0.24,
                           centerOffset: const Offset(0.0, 0.0),
                           onTap: () => _showBriefingDialog(context),
+                          screenWidth: w,
                         ),
 
                         // Research Lab (Center Holographic upgrade table)
@@ -316,6 +320,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                             _triggerHaptic();
                             widget.onOpenShop();
                           },
+                          screenWidth: w,
                         ),
 
                         // Launch Campaign (Huge Outer Space window viewport)
@@ -335,6 +340,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                             _triggerHaptic();
                             widget.onStartCampaign();
                           },
+                          screenWidth: w,
                         ),
 
                         // Training Center (Bottom-Right Terminal console)
@@ -354,6 +360,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                             _triggerHaptic();
                             widget.onStartGame();
                           },
+                          screenWidth: w,
                         ),
                       ],
                     );
@@ -500,6 +507,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
     required double height,
     required Offset centerOffset,
     required VoidCallback onTap,
+    required double screenWidth,
   }) {
     final isHovered = _hoveredSection == id;
 
@@ -588,10 +596,10 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                   ),
                 ),
 
-              // Floating micro glassmorphic tooltip card on hover
+              // Floating micro glassmorphic tooltip card on hover (clamped to screen boundaries)
               if (isHovered)
                 Positioned(
-                  left: (width - 165) / 2,
+                  left: (left + (width - 165.0) / 2.0).clamp(16.0, screenWidth - 165.0 - 16.0) - left,
                   width: 165,
                   top: -85,
                   child: Material(
@@ -702,10 +710,10 @@ class _HotspotOverlayPainter extends CustomPainter {
       bl = Offset(size.width * 0.26, size.height * 0.92);
     } else if (id == 'market') {
       // Left door lock display (highly slanted vertical side perspective)
-      tl = Offset(size.width * 0.06, size.height * 0.12);
-      tr = Offset(size.width * 0.88, size.height * 0.25);
-      br = Offset(size.width * 0.88, size.height * 0.90);
-      bl = Offset(size.width * 0.06, size.height * 0.80);
+      tl = Offset(size.width * 0.20, size.height * 0.14);
+      tr = Offset(size.width * 0.78, size.height * 0.22);
+      br = Offset(size.width * 0.78, size.height * 0.95);
+      bl = Offset(size.width * 0.20, size.height * 0.95);
     } else if (id == 'training') {
       // Bottom-Right control terminal console screen (slanted isometric screen)
       tl = Offset(size.width * 0.12, size.height * 0.25);

@@ -173,3 +173,17 @@ To protect your strategic career and progression:
 *   **Automatic Saves**: All campaign progression stats, unlocked device blueprints, purchased store modules, chassis/device ranks, and completed quest states are saved persistently to the local device.
 *   **Daily Hard Persistence**: Active daily threat levels and completed rollover dates are retained across restarts.
 *   **App Reopening**: Returning players instantly resume their exact position in the galaxy campaign, retaining every single credit and armory upgrade purchased.
+
+---
+
+## 6. Command Bridge Tactical Interface
+
+The Command Bridge acts as the central strategic hub of the Star Destroyer, providing five interactive hotspots that link the player to various game systems:
+
+*   **Tactical Market (Left Sliding Door)**: Accesses the blueprint shop for splitters, bombs, and special items. Bounded by a perfectly vertical 3D perspective projection quad representing the sliding door frame to maintain isometric alignment.
+*   **Tactical Briefing (Bottom-Left Desk)**: Opens the Admiral's logs and system manuals.
+*   **Research Lab (Center Hologram Table)**: Displays floating wireframe holograms of structural modules, facilitating R&D technology upgrades using RP.
+*   **Launch Campaign (Main Viewport)**: Leads to the star galaxy selection map.
+*   **Training Center (Bottom-Right Terminal)**: Launches simulated sectors for targeting calibration.
+
+All interface hotspots utilize micro glassmorphic tooltips that hover securely clamped within screen boundaries to prevent any visual clipping on mobile aspect ratios.

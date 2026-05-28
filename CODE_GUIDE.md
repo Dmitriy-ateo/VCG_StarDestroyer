@@ -80,6 +80,20 @@ AspectRatio(
 ### 3.2 Safe Areas & Bottom Decks
 Always place bottom firing decks or console panels inside a `SafeArea` with `top: false`. Maintain safe margins for floating overlays (like the Toolbox FAB or Inventory sliding drawers) so they do not overlap system indicators or camera notches.
 
+### 3.3 Screen-Edge Floating Tooltips & Non-Clipping Stacks
+To prevent floating micro glassmorphic tooltips from being clipped or cut off by the left or right edges of the screen/window when highlighting elements situated near screen borders:
+*   **Dynamic Margin Clamping**: Always calculate the tooltip's centered screen offset and clamp it with a secure safety margin of at least `16.0` pixels from both edges:
+    ```dart
+    left: (hotspotLeft + (hotspotWidth - tooltipWidth) / 2.0).clamp(16.0, screenWidth - tooltipWidth - 16.0) - hotspotLeft
+    ```
+*   **Non-Clipping Stacks**: Flutter `Stack` widgets apply `Clip.hardEdge` by default. To ensure that tooltips and holographic console highlights can freely overflow and render outside their parent containers' visual boundaries without getting clipped, explicitly pass `clipBehavior: Clip.none` to all enclosing `Stack` widgets in the bridge screen layout hierarchy:
+    ```dart
+    Stack(
+      clipBehavior: Clip.none,
+      children: [ ... ]
+    )
+    ```
+
 ---
 
 ## 4. Mathematics & Physics in State Loop
