@@ -73,8 +73,10 @@ class GalaxyModel {
   final String name;
   final String description;
   final String requirementDescription;
-  final int minLaserIntensityLevel;
-  final int minAimingComputerLevel;
+  final String minLaserIntensityRank;
+  final int minLaserIntensityStars;
+  final String minAimingComputerRank;
+  final int minAimingComputerStars;
   final List<DeviceType> requiredUnlockedBlueprints;
   final List<String> prerequisiteGalaxyIds;
   final List<QuestModel> quests;
@@ -84,12 +86,24 @@ class GalaxyModel {
     required this.name,
     required this.description,
     required this.requirementDescription,
-    this.minLaserIntensityLevel = 1,
-    this.minAimingComputerLevel = 1,
+    this.minLaserIntensityRank = 'F',
+    this.minLaserIntensityStars = 0,
+    this.minAimingComputerRank = 'F',
+    this.minAimingComputerStars = 0,
     this.requiredUnlockedBlueprints = const [],
     this.prerequisiteGalaxyIds = const [],
     required this.quests,
   });
+
+  int get minLaserIntensityLevel {
+    final idx = GameProgression.ranksList.indexOf(minLaserIntensityRank);
+    return idx != -1 ? (idx + 1) : 1;
+  }
+
+  int get minAimingComputerLevel {
+    final idx = GameProgression.ranksList.indexOf(minAimingComputerRank);
+    return idx != -1 ? (idx + 1) : 1;
+  }
 
   bool checkUnlockStatus(GameProgression progression) {
     // Starting Sector Galaxy is always unlocked by default
@@ -102,8 +116,14 @@ class GalaxyModel {
       (prereqId) => progression.completedGalaxyIds.contains(prereqId),
     );
 
-    return progression.laserIntensityLevel >= minLaserIntensityLevel &&
-        progression.aimingComputerLevel >= minAimingComputerLevel &&
+    final reqIntensityScore = GameProgression.getCumulativeScore(minLaserIntensityRank, minLaserIntensityStars);
+    final playerIntensityScore = progression.getLaserIntensityScore();
+
+    final reqAimingScore = GameProgression.getCumulativeScore(minAimingComputerRank, minAimingComputerStars);
+    final playerAimingScore = progression.getAimingComputerScore();
+
+    return playerIntensityScore >= reqIntensityScore &&
+        playerAimingScore >= reqAimingScore &&
         hasRequiredBlueprints &&
         hasCompletedPrereqs;
   }
@@ -114,8 +134,10 @@ class GalaxyModel {
       name: json['name'] as String,
       description: json['description'] as String,
       requirementDescription: json['requirementDescription'] as String? ?? '',
-      minLaserIntensityLevel: json['minLaserIntensityLevel'] as int? ?? 1,
-      minAimingComputerLevel: json['minAimingComputerLevel'] as int? ?? 1,
+      minLaserIntensityRank: json['minLaserIntensityRank'] as String? ?? 'F',
+      minLaserIntensityStars: json['minLaserIntensityStars'] as int? ?? 0,
+      minAimingComputerRank: json['minAimingComputerRank'] as String? ?? 'F',
+      minAimingComputerStars: json['minAimingComputerStars'] as int? ?? 0,
       requiredUnlockedBlueprints: (json['requiredUnlockedBlueprints'] as List<dynamic>?)
               ?.map((e) => DeviceType.values.firstWhere((type) => type.name == e))
               .toList() ??

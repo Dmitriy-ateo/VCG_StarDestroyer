@@ -512,23 +512,141 @@ class BoardPainter extends CustomPainter {
           }
         }
       } else {
-        // Standard grey rock asteroid
-        fillPaint.shader = LinearGradient(
-          colors: [const Color(0xFF222831).withOpacity(wallOpacity), const Color(0xFF393E46).withOpacity(wallOpacity), const Color(0xFF1E222B).withOpacity(wallOpacity)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ).createShader(localRect);
+        // Redesigned: Gorgeous Premium Volcanic Obsidian Asteroids with Pulsing Lava Fissures
+        final seed = wall.gridX * 73 + wall.gridY * 37;
+        final rand = Random(seed);
+        final numPoints = 6 + rand.nextInt(3); // 6 to 8 points for organic shape
+        
+        final points = <Offset>[];
+        for (int i = 0; i < numPoints; i++) {
+          final angle = i * 2 * pi / numPoints + (rand.nextDouble() - 0.5) * 0.25;
+          final r = 0.35 + rand.nextDouble() * 0.12; // Irregular boundary
+          points.add(Offset(cos(angle) * cellW * r, sin(angle) * cellH * r));
+        }
 
-        outlinePaint.color = const Color(0xFF2D3035).withOpacity(wallOpacity);
+        final centerOffset = Offset(
+          (rand.nextDouble() - 0.5) * cellW * 0.12,
+          (rand.nextDouble() - 0.5) * cellH * 0.12,
+        );
 
-        canvas.drawRRect(rrect, fillPaint);
-        canvas.drawRRect(rrect, outlinePaint);
+        // Draw the low-poly faceted 3D obsidian body
+        for (int i = 0; i < numPoints; i++) {
+          final pA = points[i];
+          final pB = points[(i + 1) % numPoints];
 
-        // Rock fissure details
-        final detailPaint = Paint()
-          ..color = Colors.black.withOpacity(0.3 * wallOpacity)
-          ..strokeWidth = 1.0;
-        canvas.drawLine(Offset(-cellW * 0.2, -cellH * 0.3), Offset(cellW * 0.2, cellH * 0.3), detailPaint);
+          // Compute facet normal/direction to determine lighting shade
+          final mid = Offset((pA.dx + pB.dx) / 2, (pA.dy + pB.dy) / 2);
+          final toMidX = mid.dx - centerOffset.dx;
+          final toMidY = mid.dy - centerOffset.dy;
+          
+          // Let's create an organic 3D light vector from top-left (e.g. [-0.7, -0.7])
+          final len = sqrt(toMidX * toMidX + toMidY * toMidY);
+          double dot = 0.0;
+          if (len > 0.0) {
+            dot = (-0.7 * (toMidX / len) + -0.7 * (toMidY / len));
+          }
+          final tLight = ((dot + 1.0) / 2.0).clamp(0.0, 1.0);
+
+          // Deep, rich obsidian base shades
+          final Color darkObsidian = const Color(0xFF0C0B0F).withOpacity(wallOpacity);
+          final Color lightObsidian = const Color(0xFF1D1B24).withOpacity(wallOpacity);
+          final facetColor = Color.lerp(darkObsidian, lightObsidian, tLight)!;
+
+          final facetPath = Path()
+            ..moveTo(centerOffset.dx, centerOffset.dy)
+            ..lineTo(pA.dx, pA.dy)
+            ..lineTo(pB.dx, pB.dy)
+            ..close();
+
+          final facetPaint = Paint()
+            ..color = facetColor
+            ..style = PaintingStyle.fill;
+          canvas.drawPath(facetPath, facetPaint);
+
+          // Draw subtle edge highlights between facets to emphasize low-poly facets
+          final facetBorderPaint = Paint()
+            ..color = const Color(0xFF282533).withOpacity(0.35 * wallOpacity)
+            ..strokeWidth = 0.8
+            ..style = PaintingStyle.stroke;
+          canvas.drawPath(facetPath, facetBorderPaint);
+        }
+
+        // Draw volcanic orange lava fissures pulsing dynamically
+        // Using bgAnimationValue to animate lava flow
+        final pulseValue = 0.5 + 0.5 * sin(bgAnimationValue * 2 * pi * 1.5 + (wall.gridX * 1.3 + wall.gridY * 0.7));
+        
+        final lavaColor = const Color(0xFFFF3E00); // Glowing magma orange-red
+        final lavaGlow = const Color(0xFFFF9D00);  // Bright golden yellow-orange
+        
+        final lavaPaint = Paint()
+          ..color = lavaColor.withOpacity(pulseValue * wallOpacity)
+          ..strokeWidth = 1.6
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
+
+        final lavaGlowPaint = Paint()
+          ..color = lavaGlow.withOpacity(pulseValue * 0.4 * wallOpacity)
+          ..strokeWidth = 3.5
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
+
+        // Draw 3 branching fissures starting from centerOffset radiating outwards
+        for (int f = 0; f < 3; f++) {
+          final targetIdx = (f * (numPoints ~/ 3) + rand.nextInt(2)) % numPoints;
+          final pTarget = points[targetIdx];
+
+          // Fissures are jagged, so we create a mid point
+          final midPoint = Offset(
+            (centerOffset.dx + pTarget.dx) * 0.55 + (rand.nextDouble() - 0.5) * cellW * 0.08,
+            (centerOffset.dy + pTarget.dy) * 0.55 + (rand.nextDouble() - 0.5) * cellH * 0.08,
+          );
+
+          // Draw the glow layer underneath
+          canvas.drawLine(centerOffset, midPoint, lavaGlowPaint);
+          canvas.drawLine(midPoint, pTarget * 0.75, lavaGlowPaint);
+
+          // Draw the bright lava vein on top
+          canvas.drawLine(centerOffset, midPoint, lavaPaint);
+          canvas.drawLine(midPoint, pTarget * 0.75, lavaPaint);
+        }
+
+        // Draw the premium cyber outer outline frame of the irregular rock
+        final outerPath = Path();
+        outerPath.moveTo(points[0].dx, points[0].dy);
+        for (int i = 1; i < numPoints; i++) {
+          outerPath.lineTo(points[i].dx, points[i].dy);
+        }
+        outerPath.close();
+
+        final outerFramePaint = Paint()
+          ..color = const Color(0xFF322E3D).withOpacity(wallOpacity)
+          ..strokeWidth = 1.2
+          ..style = PaintingStyle.stroke;
+        canvas.drawPath(outerPath, outerFramePaint);
+
+        // Draw a tiny secondary outer cyber-highlight on the top edges of the obsidian asteroid
+        final outerHighlightPaint = Paint()
+          ..color = const Color(0xFFFF9D00).withOpacity(pulseValue * 0.25 * wallOpacity)
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
+        
+        final highlightPath = Path();
+        bool isFirst = true;
+        for (int i = 0; i < numPoints; i++) {
+          final p = points[i];
+          // Top facing vertices (y < 0)
+          if (p.dy < 0) {
+            if (isFirst) {
+              highlightPath.moveTo(p.dx, p.dy);
+              isFirst = false;
+            } else {
+              highlightPath.lineTo(p.dx, p.dy);
+            }
+          }
+        }
+        if (!isFirst) {
+          canvas.drawPath(highlightPath, outerHighlightPaint);
+        }
       }
 
       // Draw particle shatters if destroyed
@@ -732,15 +850,89 @@ class BoardPainter extends CustomPainter {
         }
       }
 
-      // Draw planet body with spherical radial gradient
-      final bodyPaint = Paint()
-        ..shader = RadialGradient(
-          colors: [Colors.white, planet.color, planet.color.withRed(50).withGreen(50).withBlue(50)],
-          stops: const [0.05, 0.6, 1.0],
-          center: const Alignment(-0.3, -0.3),
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      // Draw planet body or custom invader cruiser ship
+      if (planet.isInvader) {
+        canvas.save();
+        canvas.translate(center.dx, center.dy);
+        
+        // 1. Draw glowing engine exhaust thruster fire
+        final double thrusterPulse = 1.0 + 0.15 * sin(bgAnimationValue * 4 * pi);
+        final thrusterPaint = Paint()
+          ..shader = RadialGradient(
+            colors: [const Color(0xFFFF9E00), const Color(0xFFFF3D00).withOpacity(0.0)],
+          ).createShader(Rect.fromCircle(center: const Offset(0, 16), radius: 10 * thrusterPulse))
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(const Offset(0, 16), 10 * thrusterPulse, thrusterPaint);
 
-      canvas.drawCircle(center, radius, bodyPaint);
+        // 2. Draw dual swept-back stabilizer wing fins
+        final wingPath = Path()
+          ..moveTo(-24, 6)
+          ..lineTo(-8, -2)
+          ..lineTo(0, -18)
+          ..lineTo(8, -2)
+          ..lineTo(24, 6)
+          ..lineTo(0, 10)
+          ..close();
+          
+        final wingPaint = Paint()
+          ..color = planet.color.withOpacity(0.35)
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(wingPath, wingPaint);
+
+        final wingOutlinePaint = Paint()
+          ..color = planet.color
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
+        canvas.drawPath(wingPath, wingOutlinePaint);
+
+        // 3. Draw heavy command ship center core hull
+        final bodyPath = Path()
+          ..moveTo(0, -24) // nose cone
+          ..lineTo(-9, 2)
+          ..lineTo(-4, 14)
+          ..lineTo(4, 14)
+          ..lineTo(9, 2)
+          ..close();
+          
+        final coreBodyPaint = Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [const Color(0xFFE0E0E0), planet.color.withRed(30).withGreen(30).withBlue(30)],
+          ).createShader(Rect.fromLTRB(-9, -24, 9, 14))
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(bodyPath, coreBodyPaint);
+
+        final bodyOutlinePaint = Paint()
+          ..color = Colors.white.withOpacity(0.85)
+          ..strokeWidth = 1.0
+          ..style = PaintingStyle.stroke;
+        canvas.drawPath(bodyPath, bodyOutlinePaint);
+
+        // 4. Draw command bridge targeting scanner core eye
+        final double pulseRadius = 3.0 + 1.0 * sin(bgAnimationValue * 3 * pi);
+        final eyePaint = Paint()
+          ..color = const Color(0xFFFF1744)
+          ..style = PaintingStyle.fill
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+        canvas.drawCircle(const Offset(0, -5), pulseRadius, eyePaint);
+
+        final highlightPaint = Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(const Offset(0, -5), 1.0, highlightPaint);
+
+        canvas.restore();
+      } else {
+        final bodyPaint = Paint()
+          ..shader = RadialGradient(
+            colors: [Colors.white, planet.color, planet.color.withRed(50).withGreen(50).withBlue(50)],
+            stops: const [0.05, 0.6, 1.0],
+            center: const Alignment(-0.3, -0.3),
+          ).createShader(Rect.fromCircle(center: center, radius: radius));
+
+        canvas.drawCircle(center, radius, bodyPaint);
+      }
 
       // Draw planet orbital rings or clouds details
       final ringPaint = Paint()
@@ -1153,9 +1345,46 @@ class BoardPainter extends CustomPainter {
           gradientColors = const [Color(0xFFFF0055), Color(0xFF7A0826)];
         }
 
-        // Draw exit direction helper lines (dotted vectors emerging from central prism)
+        // We want the apex (top corner) of a perfectly equilateral triangle (centered at Offset.zero)
+        // to point exactly in the midway direction between the two exit arrows (which is angle / 2).
+        // Since the apex is at -90 degrees in the local triangle shape, we rotate the canvas
+        // by (angle / 2 + 90.0) degrees.
+        final double triRotationRad = (angle / 2 + 90.0) * pi / 180.0;
+
+        // Draw bold, prominent equilateral prism triangle (1.1 of itemRadius)
+        final double prismScale = 1.1;
+        final prRadius = itemRadius * prismScale;
+
+        // Perfect equilateral triangle centered at Offset.zero, apex at (0, -prRadius)
+        final path = Path()
+          ..moveTo(0, -prRadius)
+          ..lineTo(prRadius * 0.866, prRadius * 0.5)
+          ..lineTo(-prRadius * 0.866, prRadius * 0.5)
+          ..close();
+
+        canvas.save();
+        canvas.rotate(triRotationRad);
+
+        final prismPaint = Paint()
+          ..shader = LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ).createShader(Rect.fromCenter(center: Offset.zero, width: prRadius * 2, height: prRadius * 2));
+        canvas.drawPath(path, prismPaint);
+
+        // Highlight split outline
+        final splitOutline = Paint()
+          ..color = primaryGlow
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.stroke;
+        canvas.drawPath(path, splitOutline);
+
+        canvas.restore();
+
+        // Draw exit direction helper lines (emerging OUT from the prism, drawn on top)
         final helperPaint = Paint()
-          ..color = primaryGlow.withOpacity(0.6)
+          ..color = primaryGlow.withOpacity(0.85)
           ..strokeWidth = 2.0
           ..style = PaintingStyle.stroke;
           
@@ -1166,33 +1395,11 @@ class BoardPainter extends CustomPainter {
         // Output line 2 (along local split angle)
         canvas.drawLine(Offset.zero, Offset(cos(splitRad) * itemRadius * 1.5, sin(splitRad) * itemRadius * 1.5), helperPaint);
 
-        // Draw arrows at the ends of helpers
+        // Draw arrows at the ends of helpers on top
         _drawArrowTip(canvas, Offset(itemRadius * 1.5, 0), 0.0, scale, primaryGlow);
         _drawArrowTip(canvas, Offset(cos(splitRad) * itemRadius * 1.5, sin(splitRad) * itemRadius * 1.5), splitRad, scale, primaryGlow);
 
-        // Triangle shape representing prism
-        final path = Path()
-          ..moveTo(0, -itemRadius)
-          ..lineTo(itemRadius, itemRadius)
-          ..lineTo(-itemRadius, itemRadius)
-          ..close();
-
-        final prismPaint = Paint()
-          ..shader = LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(Rect.fromCenter(center: Offset.zero, width: itemRadius * 2, height: itemRadius * 2));
-        canvas.drawPath(path, prismPaint);
-
-        // Highlight split outline
-        final splitOutline = Paint()
-          ..color = primaryGlow
-          ..strokeWidth = 2.0
-          ..style = PaintingStyle.stroke;
-        canvas.drawPath(path, splitOutline);
-
-        // Core dot
+        // Core dot on top
         final corePaint = Paint()
           ..color = Colors.white.withOpacity(0.8)
           ..style = PaintingStyle.fill;

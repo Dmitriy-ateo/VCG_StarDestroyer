@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/device_model.dart';
 import '../models/level_data.dart';
+import '../models/game_progression.dart';
 import '../game/game_controller.dart';
 import '../widgets/board_painter.dart';
 
@@ -65,17 +66,23 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     for (var planet in widget.controller.currentLevel.planets) {
       if (planet.gridX == x && planet.gridY == y) {
         final reqPower = planet.requiredLaserPower ?? 1;
+        final currentRank = widget.controller.progression.chassisRanks['intensity'] ?? 'F';
+        final currentStars = widget.controller.progression.chassisStars['intensity'] ?? 0;
+        final currentText = GameProgression.formatRankAndStars(currentRank, currentStars);
+
         if (reqPower > 1) {
           final isSufficient = widget.controller.progression.laserIntensityLevel >= reqPower;
+          final reqText = GameProgression.formatLevel(reqPower);
+
           final statusText = isSufficient 
-              ? "⚠️ PENETRATED (Laser Power >= $reqPower)" 
-              : "❌ BLOCKED (Requires Laser Power $reqPower)";
+              ? "⚠️ PENETRATED ($currentText >= $reqText)" 
+              : "❌ BLOCKED (Requires Laser Intensity $reqText, Current: $currentText)";
           text = "🪐 [Shielded Planet: ${planet.name}]\n$statusText\nDefense Level: $reqPower. Laser power decreases by 1 on penetration (if Laser Power > $reqPower).";
         } else {
           final canPenetrate = widget.controller.progression.laserIntensityLevel > 1;
           final statusText = canPenetrate
-              ? "⚠️ PENETRATED (Laser Power > 1, will pass through)"
-              : "🎯 DESTROYED (Laser Power = 1, will absorb)";
+              ? "⚠️ PENETRATED (Current: $currentText, will pass through)"
+              : "🎯 DESTROYED (Current: $currentText, will absorb)";
           text = "🪐 [Planet: ${planet.name}]\n$statusText\nDirect the superlaser here to destroy it. If Laser Power > 1, it will penetrate and continue propagating (losing 1 power).";
         }
         break;
@@ -86,21 +93,38 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
     if (text == null) {
       for (var wall in widget.controller.currentLevel.walls) {
         if (wall.gridX == x && wall.gridY == y) {
+          final reqPower = wall.requiredLaserPower ?? 1;
+          final currentRank = widget.controller.progression.chassisRanks['intensity'] ?? 'F';
+          final currentStars = widget.controller.progression.chassisStars['intensity'] ?? 0;
+          final currentText = GameProgression.formatRankAndStars(currentRank, currentStars);
+
           if (wall.type == 'energyShield') {
-            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
-            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= reqPower;
+            final reqText = GameProgression.formatLevel(reqPower);
+            final statusText = isPenetrated 
+                ? "⚠️ PENETRATED ($currentText >= $reqText)" 
+                : "❌ BLOCKED (Requires Laser Intensity $reqText, Current: $currentText)";
             text = "🛡️ [Energy Shield]\n$statusText\nLaser power decreases by 1 on penetration.";
           } else if (wall.type == 'spaceLitter') {
-            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
-            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= reqPower;
+            final reqText = GameProgression.formatLevel(reqPower);
+            final statusText = isPenetrated 
+                ? "⚠️ PENETRATED ($currentText >= $reqText)" 
+                : "❌ BLOCKED (Requires Laser Intensity $reqText, Current: $currentText)";
             text = "🪰 [Space Debris Litter]\n$statusText\nLaser power decreases by 1 on penetration.";
           } else if (wall.type == 'crystal') {
-            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
-            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= reqPower;
+            final reqText = GameProgression.formatLevel(reqPower);
+            final statusText = isPenetrated 
+                ? "⚠️ PENETRATED ($currentText >= $reqText)" 
+                : "❌ BLOCKED (Requires Laser Intensity $reqText, Current: $currentText)";
             text = "💎 [Crystal Matrix]\n$statusText\nLaser power decreases by 1 on penetration.";
           } else if (wall.type == 'scrapMetal') {
-            final isPenetrated = widget.controller.progression.laserIntensityLevel >= (wall.requiredLaserPower ?? 999);
-            final statusText = isPenetrated ? "⚠️ PENETRATED (Laser Power >= ${wall.requiredLaserPower})" : "❌ BLOCKED (Requires Laser Power ${wall.requiredLaserPower})";
+            final isPenetrated = widget.controller.progression.laserIntensityLevel >= reqPower;
+            final reqText = GameProgression.formatLevel(reqPower);
+            final statusText = isPenetrated 
+                ? "⚠️ PENETRATED ($currentText >= $reqText)" 
+                : "❌ BLOCKED (Requires Laser Intensity $reqText, Current: $currentText)";
             text = "⚙️ [Scrap Metal]\n$statusText\nLaser power decreases by 1 on penetration.";
           } else {
             text = "🪨 [Asteroid Block]\nIndestructible static barrier. Completely blocks the laser.";

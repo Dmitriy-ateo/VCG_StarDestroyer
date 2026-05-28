@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/device_model.dart';
 import '../models/level_data.dart';
 import '../models/game_progression.dart';
@@ -41,8 +43,56 @@ class GameController extends ChangeNotifier {
   double animationProgress = 0.0;
   Timer? _animationTimer;
 
+  static const String _saveKey = 'ds1_player_progression';
+
   GameController() {
     loadLevel(1);
+    loadProgressionFromDisk();
+  }
+
+  Future<void> saveProgressionToDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = json.encode(progression.toJson());
+      await prefs.setString(_saveKey, jsonStr);
+    } catch (e) {
+      debugPrint("Error saving game progression: $e");
+    }
+  }
+
+  Future<void> loadProgressionFromDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_saveKey);
+      if (jsonStr != null) {
+        final Map<String, dynamic> jsonMap = json.decode(jsonStr);
+        final loadedProgression = GameProgression.fromJson(jsonMap);
+        
+        progression.credits = loadedProgression.credits;
+        progression.researchPoints = loadedProgression.researchPoints;
+        progression.completedLevelIds = loadedProgression.completedLevelIds;
+        progression.unlockedDevices = loadedProgression.unlockedDevices;
+        progression.unlockedSplitterAngles = loadedProgression.unlockedSplitterAngles;
+        progression.purchasedMarketDevices = loadedProgression.purchasedMarketDevices;
+        progression.completedGalaxyIds = loadedProgression.completedGalaxyIds;
+        progression.completedQuestIds = loadedProgression.completedQuestIds;
+        progression.chassisRanks = loadedProgression.chassisRanks;
+        progression.chassisStars = loadedProgression.chassisStars;
+        progression.chassisSubLevels = loadedProgression.chassisSubLevels;
+        progression.deviceRanks = loadedProgression.deviceRanks;
+        progression.deviceStars = loadedProgression.deviceStars;
+        progression.deviceSubLevels = loadedProgression.deviceSubLevels;
+        progression.dailyHardGalaxyId = loadedProgression.dailyHardGalaxyId;
+        progression.dailyHardCompleted = loadedProgression.dailyHardCompleted;
+        progression.dailyHardDateStr = loadedProgression.dailyHardDateStr;
+        progression.dailyHardQuestId = loadedProgression.dailyHardQuestId;
+
+        _applyDailyHardBoostIfNeeded();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Error loading game progression: $e");
+    }
   }
 
   // Load level configuration
@@ -58,6 +108,7 @@ class GameController extends ChangeNotifier {
     );
 
     currentLevel = baseLevel.clone();
+    _applyDailyHardBoostIfNeeded();
     aimingAngle = currentLevel.deathStarInitialAngle;
     playState = PlayState.editing;
     traceResult = null;
@@ -111,11 +162,68 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _applyDailyHardBoostIfNeeded() {
+    final levelId = currentLevel.id;
+    // Check if this level is loaded in the active threat galaxy
+    String? activeGalaxyId;
+
+    // 1. Try to find the galaxy from the activeQuest ID if available
+    if (activeQuest != null) {
+      final qId = activeQuest!.id;
+      if (qId.startsWith('daily_hard_quest_')) {
+        final parts = qId.split('_');
+        if (parts.length >= 5) {
+          activeGalaxyId = "${parts[3]}_${parts[4]}"; // e.g. 'galaxy_1'
+        } else {
+          activeGalaxyId = progression.dailyHardGalaxyId;
+        }
+      } else if (qId.startsWith('daily_quest_')) {
+        final parts = qId.split('_');
+        if (parts.length >= 4) {
+          activeGalaxyId = "${parts[2]}_${parts[3]}"; // e.g. 'galaxy_1'
+        }
+      } else {
+        // Search preloadedGalaxies for lore/side quests
+        for (var g in preloadedGalaxies) {
+          if (g.quests.any((q) => q.id == qId)) {
+            activeGalaxyId = g.id;
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Fallback: Search preloadedGalaxies by levelId
+    if (activeGalaxyId == null) {
+      for (var g in preloadedGalaxies) {
+        if (g.quests.any((q) => q.levelData.id == levelId)) {
+          activeGalaxyId = g.id;
+          break;
+        }
+      }
+    }
+
+    if (activeGalaxyId != null &&
+        activeGalaxyId != 'galaxy_1' && // Protect starting galaxy levels from being boosted so new players aren't softlocked
+        progression.dailyHardGalaxyId == activeGalaxyId &&
+        !progression.dailyHardCompleted &&
+        levelId != 991 &&
+        levelId != 992 &&
+        levelId != 993) {
+      for (int i = 0; i < currentLevel.planets.length; i++) {
+        currentLevel.planets[i] = currentLevel.planets[i].copyWith(
+          requiredLaserPower: (currentLevel.planets[i].requiredLaserPower ?? 1) + 1,
+        );
+      }
+    }
+  }
+
   // Load campaign quest configuration
   void loadQuest(QuestModel quest) {
     _cleanupAnimation();
     activeQuest = quest;
     currentLevel = quest.levelData.clone();
+    _applyDailyHardBoostIfNeeded();
     aimingAngle = currentLevel.deathStarInitialAngle;
     playState = PlayState.editing;
     traceResult = null;
@@ -308,6 +416,10 @@ class GameController extends ChangeNotifier {
     return device.type.name;
   }
 
+  void completeSimulation() {
+    _completeSimulation();
+  }
+
   void _completeSimulation() {
     if (traceResult != null) {
       if (traceResult!.success) {
@@ -340,26 +452,35 @@ class GameController extends ChangeNotifier {
           }
 
           final questId = activeQuest!.id;
-          final alreadyCompleted = progression.completedQuestIds.contains(questId);
+          final isDailyHard = questId == progression.dailyHardQuestId;
+          final alreadyCompleted = isDailyHard ? progression.dailyHardCompleted : progression.completedQuestIds.contains(questId);
           if (!alreadyCompleted) {
-            creditsEarned = activeQuest!.creditsReward;
-            researchPointsEarned = activeQuest!.rpReward;
+            if (isDailyHard) {
+              creditsEarned = 500;
+              researchPointsEarned = 150;
+              progression.dailyHardCompleted = true;
+            } else {
+              creditsEarned = activeQuest!.creditsReward;
+              researchPointsEarned = activeQuest!.rpReward;
+            }
             
             progression.credits += creditsEarned;
             progression.researchPoints += researchPointsEarned;
             progression.completedQuestIds.add(questId);
             
             // Check if all lore quests of the galaxy are completed
-            for (var galaxy in preloadedGalaxies) {
-              final hasQuest = galaxy.quests.any((q) => q.id == questId);
-              if (hasQuest) {
-                final allLoreCompleted = galaxy.quests
-                    .where((q) => q.type == QuestType.lore)
-                    .every((q) => progression.completedQuestIds.contains(q.id));
-                if (allLoreCompleted) {
-                  progression.completedGalaxyIds.add(galaxy.id);
+            if (!isDailyHard) {
+              for (var galaxy in preloadedGalaxies) {
+                final hasQuest = galaxy.quests.any((q) => q.id == questId);
+                if (hasQuest) {
+                  final allLoreCompleted = galaxy.quests
+                      .where((q) => q.type == QuestType.lore)
+                      .every((q) => progression.completedQuestIds.contains(q.id));
+                  if (allLoreCompleted) {
+                    progression.completedGalaxyIds.add(galaxy.id);
+                  }
+                  break;
                 }
-                break;
               }
             }
           } else {
@@ -381,6 +502,7 @@ class GameController extends ChangeNotifier {
             researchPointsEarned = 0;
           }
         }
+        saveProgressionToDisk();
       } else {
         playState = PlayState.defeat;
         creditsEarned = 0;
@@ -400,17 +522,39 @@ class GameController extends ChangeNotifier {
 
   // Shop actions
   bool buyUpgrade(String upgradeType) {
-    int currentLvl = 1;
-    if (upgradeType == 'intensity') currentLvl = progression.laserIntensityLevel;
-    if (upgradeType == 'aiming') currentLvl = progression.aimingComputerLevel;
-    if (upgradeType == 'chassis') currentLvl = progression.chassisCapacityLevel;
+    if (upgradeType != 'intensity' && upgradeType != 'aiming' && upgradeType != 'chassis') {
+      return false;
+    }
 
-    int cost = GameProgression.getUpgradeCost(upgradeType, currentLvl);
+    final rank = progression.chassisRanks[upgradeType] ?? 'F';
+    final stars = progression.chassisStars[upgradeType] ?? 0;
+    final subLevel = progression.chassisSubLevels[upgradeType] ?? 1;
+
+    final cost = GameProgression.getChassisUpgradeCost(rank, stars, subLevel);
     if (cost > 0 && progression.credits >= cost) {
       progression.credits -= cost;
-      if (upgradeType == 'intensity') progression.laserIntensityLevel++;
-      if (upgradeType == 'aiming') progression.aimingComputerLevel++;
-      if (upgradeType == 'chassis') progression.chassisCapacityLevel++;
+
+      int nextSubLevel = subLevel + 1;
+      int nextStars = stars;
+      String nextRank = rank;
+
+      if (nextSubLevel > 5) {
+        nextSubLevel = 1;
+        nextStars += 1;
+        if (nextStars > 3) {
+          nextStars = 0;
+          final rankIdx = GameProgression.ranksList.indexOf(rank);
+          if (rankIdx < GameProgression.ranksList.length - 1) {
+            nextRank = GameProgression.ranksList[rankIdx + 1];
+          }
+        }
+      }
+
+      progression.chassisRanks[upgradeType] = nextRank;
+      progression.chassisStars[upgradeType] = nextStars;
+      progression.chassisSubLevels[upgradeType] = nextSubLevel;
+
+      saveProgressionToDisk();
       notifyListeners();
       return true;
     }
@@ -424,6 +568,7 @@ class GameController extends ChangeNotifier {
     if (progression.researchPoints >= cost) {
       progression.researchPoints -= cost;
       progression.unlockedDevices.add(type);
+      saveProgressionToDisk();
       notifyListeners();
       return true;
     }
@@ -433,6 +578,7 @@ class GameController extends ChangeNotifier {
   bool unlockSplitterVariant(double angle) {
     final unlocked = progression.unlockSplitterAngle(angle);
     if (unlocked) {
+      saveProgressionToDisk();
       notifyListeners();
       return true;
     }
@@ -441,11 +587,35 @@ class GameController extends ChangeNotifier {
 
   bool upgradeDevice(DeviceType type) {
     if (!progression.unlockedDevices.contains(type)) return false;
-    final currentLvl = progression.deviceLevels[type] ?? 1;
-    final cost = GameProgression.getDeviceUpgradeCost(type, currentLvl);
+    final rank = progression.deviceRanks[type] ?? 'F';
+    final stars = progression.deviceStars[type] ?? 0;
+    final subLevel = progression.deviceSubLevels[type] ?? 1;
+
+    final cost = GameProgression.getDeviceUpgradeCost(rank, stars, subLevel);
     if (cost > 0 && progression.researchPoints >= cost) {
       progression.researchPoints -= cost;
-      progression.deviceLevels[type] = currentLvl + 1;
+
+      int nextSubLevel = subLevel + 1;
+      int nextStars = stars;
+      String nextRank = rank;
+
+      if (nextSubLevel > 5) {
+        nextSubLevel = 1;
+        nextStars += 1;
+        if (nextStars > 3) {
+          nextStars = 0;
+          final rankIdx = GameProgression.ranksList.indexOf(rank);
+          if (rankIdx < GameProgression.ranksList.length - 1) {
+            nextRank = GameProgression.ranksList[rankIdx + 1];
+          }
+        }
+      }
+
+      progression.deviceRanks[type] = nextRank;
+      progression.deviceStars[type] = nextStars;
+      progression.deviceSubLevels[type] = nextSubLevel;
+
+      saveProgressionToDisk();
       notifyListeners();
       return true;
     }
@@ -511,6 +681,7 @@ class GameController extends ChangeNotifier {
         }
       }
 
+      saveProgressionToDisk();
       notifyListeners();
       return true;
     }

@@ -8,8 +8,10 @@ const String campaignJsonConfig = r'''
     "name": "Core Outpost",
     "description": "Establish initial Imperial coordinates. Realign core relays and calibrate targeting systems in the inner ring.",
     "requirementDescription": "Open to all recruits by default.",
-    "minLaserIntensityLevel": 1,
-    "minAimingComputerLevel": 1,
+    "minLaserIntensityRank": "F",
+    "minLaserIntensityStars": 0,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 0,
     "requiredUnlockedBlueprints": [],
     "prerequisiteGalaxyIds": [],
     "quests": [
@@ -151,9 +153,11 @@ const String campaignJsonConfig = r'''
     "id": "galaxy_2",
     "name": "Nebular Depths",
     "description": "Vast space clusters warped by intense gravity fields. Utilize high-mass slingshot orbits to navigate asteroid shielding.",
-    "requirementDescription": "Requires R&D Laser Intensity Level 2+.",
-    "minLaserIntensityLevel": 2,
-    "minAimingComputerLevel": 1,
+    "requirementDescription": "Requires Laser Intensity Rank F ★+.",
+    "minLaserIntensityRank": "F",
+    "minLaserIntensityStars": 1,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 0,
     "requiredUnlockedBlueprints": [],
     "prerequisiteGalaxyIds": ["galaxy_1"],
     "quests": [
@@ -217,7 +221,7 @@ const String campaignJsonConfig = r'''
         "levelData": {
           "id": 5,
           "name": "The Gravitational Sling",
-          "description": "Orbital detour. Place a Gravity Well at (2, 7) to pull the laser LEFT around the asteroid at (5, 5). Place a Reflector at (1, 4) at 135° to reflect the curved laser right onto the Mon Gazza core at (6, 4)!",
+          "description": "Orbital detour. Place a Gravity Well at (2, 7) to pull the laser LEFT around the asteroid column, and a Reflector at (1, 4) at 135° to reflect the curved laser right onto the Mon Gazza core at (6, 4)!",
           "deathStarX": 5,
           "deathStarY": 11,
           "deathStarInitialAngle": -90.0,
@@ -233,6 +237,10 @@ const String campaignJsonConfig = r'''
           ],
           "walls": [
             { "gridX": 5, "gridY": 5, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 6, "gridY": 5, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 6, "gridY": 6, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 3, "gridY": 8, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 4, "gridY": 7, "isDestructible": false, "type": "asteroid" },
             { "gridX": 1, "gridY": 3, "isDestructible": false, "type": "energyShield", "requiredLaserPower": 2 }
           ],
           "availableInventory": [
@@ -247,9 +255,11 @@ const String campaignJsonConfig = r'''
     "id": "galaxy_3",
     "name": "Outer Horizon",
     "description": "Distended outer space sectors connected through spatial portals.",
-    "requirementDescription": "Requires Laser Intensity Level 3+, Aiming Computer Level 2+, and Researched Portals.",
-    "minLaserIntensityLevel": 3,
-    "minAimingComputerLevel": 2,
+    "requirementDescription": "Requires Laser Intensity Rank F ★★+, Aiming Computer Rank F ★+, and Researched Portals.",
+    "minLaserIntensityRank": "F",
+    "minLaserIntensityStars": 2,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 1,
     "requiredUnlockedBlueprints": ["portal"],
     "prerequisiteGalaxyIds": ["galaxy_2"],
     "quests": [

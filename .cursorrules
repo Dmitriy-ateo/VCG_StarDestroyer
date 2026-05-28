@@ -1,0 +1,34 @@
+# Star Destroyer Coding Agent Instructions & Rules
+
+You are an AI coding assistant working on the *Star Destroyer: Single Shot* project.
+
+To minimize token usage, avoid broad searches, and ensure 100% architectural alignment, you MUST adhere to the following rules:
+
+---
+
+## 1. Context Re-Initialization & Discovery (MANDATORY)
+*   **Zero-Discovery Search**: DO NOT run global recursive greps or broad folder searches to locate files.
+*   **Mandatory Initial File Read**: At the start of every session, after a context compaction/compilation, or when exploring a feature, **you MUST immediately read [SOURCE_TREE.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS1/SOURCE_TREE.md)**.
+*   `SOURCE_TREE.md` catalogs every source file in the `lib/` directory, its exact role, classes, and provides precise ripgrep filters. Use it to instantly locate files and read them directly using the `view_file` tool.
+
+---
+
+## 2. High-Tech RPG & Physics Architecture Rules
+Before implementing modifications, read the architectural specifications in the guides:
+*   Read **[CODE_GUIDE.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS1/CODE_GUIDE.md)** to align with custom canvas custom-painted mobile game standards (RepaintBoundary, AspectRatio viewport locks, 60fps Custom Painters, HSL Neon aesthetics, and local SharedPreferences persistence rules).
+*   Read **[GAME_GUIDE.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS1/GAME_GUIDE.md)** to align with gameplay physics balance configurations (mirrors, splitters, gravity radius, portals, bomb shockwaves, and R&D level mechanics).
+*   **MANDATORY Living Guides Policy**: Every single time you add a new feature or update an existing one, **you MUST immediately modify/update [CODE_GUIDE.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS1/CODE_GUIDE.md) and [GAME_GUIDE.md](file:///Users/dmitrijkabakov/Work/ThirdParty/FlutterApp/VibeGaming/DS1/GAME_GUIDE.md)** to reflect the changes. These files must remain a perfect, living, and synchronized single-source-of-truth. Do not omit this step under any circumstances.
+
+---
+
+## 3. Strict Search Exclusions
+Skip scanning native folders entirely. Apply these exclude parameters to all search tools:
+`android/`, `ios/`, `web/`, `windows/`, `macos/`, `linux/`, `.dart_tool/`, `build/`, `.idea/`.
+
+---
+
+## 4. Git Commit Policy (MANDATORY)
+*   **Automatic Proactive Commits**: Every single time you successfully complete and verify a task, feature request, bug fix, or visual polish, **you MUST immediately propose/run a git commit command** to save the work.
+*   **Commit Message Convention**: Write a highly descriptive, professional commit message outlining exactly what was added, refactored, or fixed.
+    *   Examples: `feat(generator): block direct line-of-sight cheat on advanced galaxies daily sectors`, `style(bridge): refactor hotspot overlays to conform with 3D perspective geometry using bilinear quad projection`.
+*   Do not leave completed work uncommitted. Propose/run a `git commit -am "[message]"` directly upon verification.

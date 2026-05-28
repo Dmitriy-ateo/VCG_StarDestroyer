@@ -39,6 +39,10 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   static List<QuestModel>? _sessionDailyQuests;
   static int _completedDailyCount = 0;
 
+  // Session-persistent daily hard quest state
+  static QuestModel? _sessionDailyHardQuest;
+  static String? _sessionDailyHardDateStr;
+
   // Session-persistent side quests state mapped by galaxyId
   static Map<String, List<QuestModel>>? _sessionSideQuestsMap;
 
@@ -59,6 +63,34 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Initialize and refresh today's Daily Hard Quest
+  void _initializeDailyHardQuest(GameProgression progression) {
+    final today = progression.dailyHardDateStr;
+    if (_sessionDailyHardQuest == null || _sessionDailyHardDateStr != today) {
+      if (progression.dailyHardGalaxyId == widget.galaxyId && !progression.dailyHardCompleted) {
+        final hardLevel = SectorGenerator.generateDailyHardSector(progression, widget.galaxyId);
+        _sessionDailyHardQuest = QuestModel(
+          id: progression.dailyHardQuestId ?? "daily_hard_quest_${widget.galaxyId}",
+          title: hardLevel.name,
+          description: hardLevel.description,
+          type: QuestType.daily,
+          storyLoreSnippet: "TACTICAL INTRUDERS IN SECTOR!\n\n${hardLevel.description}",
+          creditsReward: hardLevel.creditsReward,
+          rpReward: hardLevel.researchPointsReward,
+          levelData: hardLevel,
+        );
+        _sessionDailyHardDateStr = today;
+      } else {
+        _sessionDailyHardQuest = null;
+        _sessionDailyHardDateStr = today;
+      }
+    } else {
+      if (progression.dailyHardCompleted) {
+        _sessionDailyHardQuest = null;
+      }
+    }
   }
 
   // Initialize and refresh daily quests list
@@ -91,7 +123,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   QuestModel _generateUniqueDailyQuest(GameProgression progression) {
     final dailyLevel = SectorGenerator.generateDailySector(progression, widget.galaxyId);
     // Generate a secure unique daily quest ID
-    final uniqueId = "daily_quest_${dailyLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
+    final uniqueId = "daily_quest_${widget.galaxyId}_${dailyLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
     return QuestModel(
       id: uniqueId,
       title: dailyLevel.name,
@@ -229,6 +261,9 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
           // Daily quests: Max 3 active (incomplete) Daily quests (10 max total completions, refilled dynamically when completed)
           _initializeSessionDailyQuests(progression);
           final dailyQuests = _sessionDailyQuests ?? const <QuestModel>[];
+
+          // Daily Hard Quest: 1 highly challenging mission per day in a random galaxy
+          _initializeDailyHardQuest(progression);
 
           // Collect already-computed angles for both orbits to prevent overlapping
           final List<double> sideAngles = [];
@@ -417,6 +452,19 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                   );
                                 }),
 
+                                // D. Active Daily Hard Quest Node (Orbit 3, Outer, opposite rightmost coordinate)
+                                if (_sessionDailyHardQuest != null)
+                                  _buildOrbitingPlanet(
+                                    quest: _sessionDailyHardQuest!,
+                                    center: center,
+                                    rx: orbitXRadii[2],
+                                    ry: orbitYRadii[2],
+                                    theta: 0.0,
+                                    themeColor: const Color(0xFFFF1744),
+                                    icon: Icons.gps_fixed,
+                                    isHardDaily: true,
+                                  ),
+
                                 // 3. Centered Tactical Briefing Console Modal (Overlay with dimming & blur click-outside dismiss)
                                 if (_selectedQuest != null)
                                   Positioned.fill(
@@ -468,6 +516,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     required double theta,
     required Color themeColor,
     required IconData icon,
+    bool isHardDaily = false,
   }) {
     // Parametric calculations to find position on the compressed elliptical track
     const double phi = -pi / 4; // -45 degrees rotation for bottom-left to top-right skew
@@ -486,10 +535,10 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     final isSelected = _selectedQuest?.id == quest.id;
 
     return Positioned(
-      left: px - planetSize / 2,
+      left: px - (planetSize * 1.6) / 2,
       top: py - planetSize / 2,
-      width: planetSize,
-      height: planetSize + 22.0 * depthScale, // scale label margin as well
+      width: planetSize * 1.6,
+      height: planetSize + 32.0 * depthScale, // scale label margin as well
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
@@ -546,15 +595,20 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
             const SizedBox(height: 4),
             // Floating responsive planet label
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF161B22).withOpacity(0.8),
+                color: isHardDaily ? const Color(0xFF2C0A0D).withOpacity(0.85) : const Color(0xFF161B22).withOpacity(0.8),
                 borderRadius: BorderRadius.circular(4),
+                border: isHardDaily ? Border.all(color: const Color(0xFFFF1744).withOpacity(0.4), width: 0.8) : null,
               ),
               child: Text(
-                quest.title.replaceAll(RegExp(r'^Daily Sector:\s*', caseSensitive: false), '').toUpperCase(),
+                isHardDaily
+                    ? "⚠️ THREAT: ${quest.title.replaceAll(RegExp(r'^DAILY HARD:\s*', caseSensitive: false), '').toUpperCase()}"
+                    : quest.title.replaceAll(RegExp(r'^Daily Sector:\s*', caseSensitive: false), '').toUpperCase(),
                 style: TextStyle(
-                  color: isSelected ? const Color(0xFFFFFFFF) : Colors.grey,
+                  color: isSelected 
+                      ? const Color(0xFFFFFFFF) 
+                      : (isHardDaily ? const Color(0xFFFF1744) : Colors.grey),
                   fontSize: 7.5 * depthScale,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -570,9 +624,13 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   }
 
   Widget _buildBriefingConsole(BuildContext context, QuestModel quest) {
+    final isHardDaily = quest.id == widget.controller.progression.dailyHardQuestId;
     String typeLabel = "STORY EVENT";
     Color typeColor = StyleGuide.tertiary;
-    if (quest.type == QuestType.side) {
+    if (isHardDaily) {
+      typeLabel = "🚨 DAILY TACTICAL THREAT ALERT 🚨";
+      typeColor = const Color(0xFFFF1744);
+    } else if (quest.type == QuestType.side) {
       typeLabel = "TACTICAL DRILL";
       typeColor = StyleGuide.secondary;
     } else if (quest.type == QuestType.daily) {

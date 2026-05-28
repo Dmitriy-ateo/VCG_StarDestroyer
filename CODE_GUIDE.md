@@ -116,3 +116,40 @@ To deliver an elite, visually stunning first impression, follow these design axi
 | **Atmospheric Glows** | Paint layered circles under planets and devices using a high blur radius, simulating space atmospheres: `MaskFilter.blur(BlurStyle.normal, scale * 0.1)`. |
 | **Glassmorphism** | Sliding drawer panels must use translucent black fills (`withOpacity(0.85)`) coupled with blurred overlays and bright neon borders. |
 | **Typography** | Always enforce monospaced custom fonts for digital console stats (like active degrees `"-90°"`) to prevent text shifting during layout changes. |
+| **3D Perspective HUDs** | Never draw flat 2D overlays on top of 3D/isometric background graphics. Always define a projection quad mapping the background's slanted geometry (using bilinear patch interpolation `Offset.lerp`) and trace all vector graphics, scanner lines, circles, and telemetry waves strictly inside it to conform with the perspective. |
+
+---
+
+## 7. Persistent Progression & Auto-Save System
+
+To keep player achievements, researched blueprints, currency, and upgrades safe across sessions, the application integrates an automatic, non-blocking local persistence system:
+
+*   **Underlying Technology**: Uses the official `shared_preferences` package to write a unified JSON representation of `GameProgression` to the device's secure key-value core storage under key `ds1_player_progression`.
+*   **JSON Serialization**:
+    - `toJson()`: Serializes complex structures (like typed `Set` sets, `double` sets, and enum-mapped progression maps `Map<DeviceType, String>`) into native JSON primitive lists and maps.
+    - `fromJson()`: Reconstructs state variables cleanly, dynamically parsing numerical lists, string lists, and enum maps, falling back to starting campaign defaults if values are missing or damaged.
+*   **Asynchronous Safe Writing**: The auto-save method `saveProgressionToDisk()` is non-blocking and executes entirely in the background. It is triggered automatically inside `GameController` state mutators:
+    - **Sector Completion**: Instantly saves completion marks, unlocked galaxies, and currency rewards upon superlaser victory.
+    - **Armory & Tech Upgrades**: Saves credits, research points, and ranks immediately when any sub-system chassis or tech device is upgraded.
+    - **Market Transactions**: Saves active hardware inventories upon purchasing devices or unlocking splitter angles in the storefront.
+*   **Auto-Load on App Launch**: The controller constructor triggers `loadProgressionFromDisk()` on startup. Once the storage read succeeds, it replaces the in-memory progress model, recalibrates active sector shields, and calls `notifyListeners()` to reconstruct screens cleanly.
+
+### 7.1 Post-Frame Callback Safe-Saves
+In Flutter, attempting to trigger asynchronous disk saves or call listener updates that rebuild other widgets *inside* a widget's `build` method can throw a layout-loop exception (i.e., *cannot call notifyListeners during build*). 
+*   **Rule**: Any UI-triggered save (such as auto-saving on screen build or when an offline calendar threat rollover is detected during map construction) **MUST** be deferred inside a post-frame callback:
+    ```dart
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.saveProgressionToDisk();
+    });
+    ```
+
+### 7.2 SharedPreferences Mocking in Unit Tests
+Flutter unit tests run in a headless environment without native system plugin bindings. Calling `SharedPreferences.getInstance()` in tests without pre-configuring the bindings will fail with a `MissingPluginException`.
+*   **Rule**: At the start of every test file that exercises the game state, controllers, or progression models, you **MUST** register mock initial values to bootstrap the plugin in-memory:
+    ```dart
+    setUp(() {
+      // Mock the native platform channel bindings
+      SharedPreferences.setMockInitialValues({});
+    });
+    ```
+    Ensure this is initialized before constructing any `GameController` instance.

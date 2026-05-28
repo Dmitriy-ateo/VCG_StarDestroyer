@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 
 class MainMenuScreen extends StatefulWidget {
-  final VoidCallback onStartCampaign;
-  final VoidCallback onStartGame;
-  final VoidCallback onOpenShop;
-  final VoidCallback onOpenMarket;
+  final VoidCallback onEnterBridge;
 
   const MainMenuScreen({
     super.key,
-    required this.onStartCampaign,
-    required this.onStartGame,
-    required this.onOpenShop,
-    required this.onOpenMarket,
+    required this.onEnterBridge,
   });
 
   @override
@@ -71,7 +65,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                       final value = _pulseController.value;
                       return Column(
                         children: [
-                          Text(
+                           Text(
                             "STAR DESTROYER",
                             style: TextStyle(
                               fontSize: 34,
@@ -116,40 +110,16 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                       style: TextStyle(color: Colors.grey, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 48),
 
-                  // Menu Buttons
+                  // Single Menu Button: Enter Command Bridge
                   _buildMenuButton(
-                    label: "LAUNCH CAMPAIGN",
-                    onPressed: widget.onStartCampaign,
+                    label: "ENTER COMMAND BRIDGE",
+                    onPressed: widget.onEnterBridge,
                     isPrimary: true,
                   ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    label: "TRAINING CENTER",
-                    onPressed: widget.onStartGame,
-                    isPrimary: false,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    label: "RESEARCH LAB",
-                    onPressed: widget.onOpenShop,
-                    isPrimary: false,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    label: "TACTICAL MARKET",
-                    onPressed: widget.onOpenMarket,
-                    isPrimary: false,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    label: "TACTICAL BRIEFING",
-                    onPressed: () => _showHowToPlayDialog(context),
-                    isPrimary: false,
-                  ),
 
-                  const SizedBox(height: 64),
+                  const SizedBox(height: 96),
                   // Footer
                   const Text(
                     "VIBEGAMING STUDIO • CLASSIFIED ARCHITECTURE",
@@ -229,87 +199,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
     );
   }
 
-  void _showHowToPlayDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF161B22),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFF00ADB5), width: 1.5),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.menu_book, color: Color(0xFF00FFF5)),
-              SizedBox(width: 12),
-              Text(
-                "TACTICAL INSTRUMENTS",
-                style: TextStyle(color: Colors.white, letterSpacing: 1.5, fontSize: 18),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildInstructionRow(
-                  Icons.looks_one,
-                  "Mission Directive",
-                  "Destroy all Target Planets in each sector using EXACTLY ONE superlaser shot. If you miss even one planet, the simulation fails.",
-                ),
-                _buildInstructionRow(
-                  Icons.looks_two,
-                  "Device Placement",
-                  "Drag items from the inventory onto empty grid coordinate cells. Tap once to rotate a placed device by 45°. Long-press to remove it.",
-                ),
-                _buildInstructionRow(
-                  Icons.looks_3,
-                  "Device Typology",
-                  "• REFLECTOR: Redirects the laser path based on its mirror angle.\n• SPLITTER: Splits one laser beam into two streams.\n• BOMB: Detonates on touch, blowing up planets in a grid radius of 2.\n• GRAVITY WELL: Creates a curved trajectory by bending rays.\n• PORTALS: Enters portal A, exits portal B.",
-                ),
-                _buildInstructionRow(
-                  Icons.looks_4,
-                  "Upgrades Console",
-                  "Spend earned credits on upgrades like Aiming Preview paths. Spend RP from tutorial clearances to unlock splitters, portals, and gravity blueprints.",
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("DISMISS", style: TextStyle(color: Color(0xFF00FFF5), fontWeight: FontWeight.bold)),
-            )
-          ],
-        );
-      },
-    );
-  }
 
-  Widget _buildInstructionRow(IconData icon, String title, String body) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: const Color(0xFF00ADB5), size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(body, style: const TextStyle(color: Colors.grey, fontSize: 11, height: 1.4)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _MenuGridPainter extends CustomPainter {

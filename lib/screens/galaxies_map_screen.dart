@@ -63,6 +63,18 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
           final progression = widget.controller.progression;
           final galaxies = preloadedGalaxies;
 
+          // Trigger dynamic offline daily hard rollover check
+          final unlockedIds = galaxies
+              .where((g) => g.checkUnlockStatus(progression))
+              .map((g) => g.id)
+              .toList();
+          final didRollover = progression.checkAndRollOverDailyHard(unlockedIds);
+          if (didRollover) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              widget.controller.saveProgressionToDisk();
+            });
+          }
+
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -212,7 +224,8 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                   final isCompleted = progression.completedGalaxyIds.contains(galaxy.id);
                                   final activeLoreGalaxyId = _getActiveLoreGalaxyId(progression);
                                   final isTargetLoreGalaxy = activeLoreGalaxyId == galaxy.id;
-                                  
+                                  final isHardThreatActive = progression.dailyHardGalaxyId == galaxy.id && !progression.dailyHardCompleted;
+                                    
                                   return Positioned(
                                     left: center.dx - nodeSize / 2,
                                     top: center.dy - nodeSize / 2,
@@ -230,7 +243,13 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                           final double px = nodeSize / 2 + dx;
                                           final double py = nodeSize / 2 + dy;
 
-                                          // Pulse the lore icon scale (2 cycles per animation rotation)
+                                          const double hardAngle = pi / 2; // Fixed at the bottom center of the node
+                                          final double hdx = orbitRadius * cos(hardAngle);
+                                          final double hdy = orbitRadius * sin(hardAngle);
+                                          final double hpx = nodeSize / 2 + hdx;
+                                          final double hpy = nodeSize / 2 + hdy;
+
+                                          // Pulse the icons scale (2 cycles per animation rotation)
                                           final double pulseScale = 1.0 + 0.12 * sin(_animationController.value * 2.0 * pi * 2.0);
 
                                           return Stack(
@@ -290,6 +309,19 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                                   child: Transform.scale(
                                                     scale: pulseScale,
                                                     child: _buildLoreGuidanceBadge(),
+                                                  ),
+                                                ),
+
+                                              // Daily Hard Mission Incursion Threat Alert Badge (Pulsing crimson opposite)
+                                              if (isHardThreatActive && isUnlocked)
+                                                Positioned(
+                                                  left: hpx - 17.0,
+                                                  top: hpy - 17.0,
+                                                  width: 34.0,
+                                                  height: 34.0,
+                                                  child: Transform.scale(
+                                                    scale: pulseScale,
+                                                    child: _buildHardThreatBadge(),
                                                   ),
                                                 ),
 
@@ -386,6 +418,30 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
       default:
         return _CoreOutpostPainter(isUnlocked: isUnlocked);
     }
+  }
+
+  Widget _buildHardThreatBadge() {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A0A0D),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFFF1744), width: 1.8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF1744).withOpacity(0.55),
+            blurRadius: 10,
+            spreadRadius: 1.5,
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.gpp_bad,
+        color: Color(0xFFFF1744),
+        size: 16,
+      ),
+    );
   }
 
   String? _getActiveLoreGalaxyId(GameProgression progression) {
@@ -644,8 +700,13 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
     }
 
     // 2. Laser Intensity check
-    if (galaxy.minLaserIntensityLevel > 1) {
-      final met = progression.laserIntensityLevel >= galaxy.minLaserIntensityLevel;
+    final reqIntensityScore = GameProgression.getCumulativeScore(galaxy.minLaserIntensityRank, galaxy.minLaserIntensityStars);
+    if (reqIntensityScore > 0) {
+      final met = progression.getLaserIntensityScore() >= reqIntensityScore;
+      final reqText = GameProgression.formatRankAndStars(galaxy.minLaserIntensityRank, galaxy.minLaserIntensityStars);
+      final currentRank = progression.chassisRanks['intensity'] ?? 'F';
+      final currentStars = progression.chassisStars['intensity'] ?? 0;
+      final currentText = GameProgression.formatRankAndStars(currentRank, currentStars);
       bullets.add(
         Padding(
           padding: const EdgeInsets.only(top: 6),
@@ -659,7 +720,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  "Requires Laser Intensity Level ${galaxy.minLaserIntensityLevel} (Current: ${progression.laserIntensityLevel})",
+                  "Requires Laser Intensity $reqText (Current: $currentText)",
                   style: TextStyle(
                     color: met ? Colors.grey : Colors.amberAccent,
                     fontSize: 11,
@@ -674,8 +735,13 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
     }
 
     // 3. Aiming Computer check
-    if (galaxy.minAimingComputerLevel > 1) {
-      final met = progression.aimingComputerLevel >= galaxy.minAimingComputerLevel;
+    final reqAimingScore = GameProgression.getCumulativeScore(galaxy.minAimingComputerRank, galaxy.minAimingComputerStars);
+    if (reqAimingScore > 0) {
+      final met = progression.getAimingComputerScore() >= reqAimingScore;
+      final reqText = GameProgression.formatRankAndStars(galaxy.minAimingComputerRank, galaxy.minAimingComputerStars);
+      final currentRank = progression.chassisRanks['aiming'] ?? 'F';
+      final currentStars = progression.chassisStars['aiming'] ?? 0;
+      final currentText = GameProgression.formatRankAndStars(currentRank, currentStars);
       bullets.add(
         Padding(
           padding: const EdgeInsets.only(top: 6),
@@ -689,7 +755,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  "Requires Aiming Computer Level ${galaxy.minAimingComputerLevel} (Current: ${progression.aimingComputerLevel})",
+                  "Requires Aiming Computer $reqText (Current: $currentText)",
                   style: TextStyle(
                     color: met ? Colors.grey : Colors.amberAccent,
                     fontSize: 11,

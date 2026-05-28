@@ -337,30 +337,38 @@ class MarketScreen extends StatelessWidget {
                                     ElevatedButton(
                                       onPressed: canAfford
                                           ? () {
-                                              controller.buyMarketDevice(item.itemId);
-                                              HapticFeedback.mediumImpact();
                                               final messenger = ScaffoldMessenger.of(context);
                                               messenger.clearSnackBars();
+                                              final screenHeight = MediaQuery.of(context).size.height;
                                               messenger.showSnackBar(
                                                 SnackBar(
                                                   behavior: SnackBarBehavior.floating,
+                                                  margin: EdgeInsets.only(
+                                                    bottom: (screenHeight - 120).clamp(0.0, double.infinity),
+                                                    left: 24,
+                                                    right: 24,
+                                                  ),
                                                   backgroundColor: const Color(0xFF161B22),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius: BorderRadius.circular(10),
-                                                    side: BorderSide(color: item.glowColor),
+                                                    side: BorderSide(color: item.glowColor, width: 1.5),
                                                   ),
                                                   content: Row(
                                                     children: [
-                                                      Icon(Icons.check_circle_outline, color: item.glowColor),
-                                                      const SizedBox(width: 12),
-                                                      Text(
-                                                        "Purchased extra ${item.name}!",
-                                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                                      Icon(Icons.check_circle_outline, color: item.glowColor, size: 18),
+                                                      const SizedBox(width: 10),
+                                                      Expanded(
+                                                        child: Text(
+                                                          "Purchased extra ${item.name}!",
+                                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
                                               );
+                                              controller.buyMarketDevice(item.itemId);
+                                              HapticFeedback.mediumImpact();
                                             }
                                           : null,
                                       style: ElevatedButton.styleFrom(

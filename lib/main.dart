@@ -9,6 +9,7 @@ import 'screens/research_shop_screen.dart';
 import 'screens/market_screen.dart';
 import 'screens/galaxies_map_screen.dart';
 import 'screens/galaxy_board_screen.dart';
+import 'screens/command_bridge_screen.dart';
 import 'theme/style_guide.dart';
 
 void main() {
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Star Destroyer: Single Shot',
+      title: 'Star Destroyer',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const AppScrollBehavior(),
       theme: ThemeData(
@@ -59,7 +60,7 @@ class GameRouter extends StatefulWidget {
 }
 
 class _GameRouterState extends State<GameRouter> {
-  // Screens: 'menu', 'select', 'game', 'shop', 'market', 'galaxies', 'galaxy_board'
+  // Screens: 'menu', 'bridge', 'select', 'game', 'shop', 'market', 'galaxies', 'galaxy_board'
   String _currentScreen = 'menu';
   final List<String> _screenHistory = ['menu'];
   String _selectedGalaxyId = '';
@@ -90,9 +91,9 @@ class _GameRouterState extends State<GameRouter> {
         _screenHistory.removeLast();
         _currentScreen = _screenHistory.last;
       } else {
-        _currentScreen = 'menu';
+        _currentScreen = 'bridge';
         _screenHistory.clear();
-        _screenHistory.add('menu');
+        _screenHistory.add('bridge');
       }
     });
   }
@@ -108,10 +109,16 @@ class _GameRouterState extends State<GameRouter> {
     switch (_currentScreen) {
       case 'menu':
         return MainMenuScreen(
+          onEnterBridge: () => _navigateTo('bridge'),
+        );
+      case 'bridge':
+        return CommandBridgeScreen(
+          controller: _controller,
           onStartCampaign: () => _navigateTo('galaxies'),
           onStartGame: () => _navigateTo('select'),
           onOpenShop: () => _navigateTo('shop'),
           onOpenMarket: () => _navigateTo('market'),
+          onBackToMenu: () => _navigateTo('menu'),
         );
       case 'select':
         return LevelSelectScreen(
@@ -120,7 +127,7 @@ class _GameRouterState extends State<GameRouter> {
             _controller.loadLevel(levelId);
             _navigateTo('game');
           },
-          onBackToMenu: () => _navigateTo('menu'),
+          onBackToMenu: () => _navigateTo('bridge'),
         );
       case 'game':
         return GameBoardScreen(
@@ -150,7 +157,7 @@ class _GameRouterState extends State<GameRouter> {
             });
             _navigateTo('galaxy_board');
           },
-          onBackToMenu: () => _navigateTo('menu'),
+          onBackToMenu: () => _navigateTo('bridge'),
           onGoToShop: () => _navigateTo('market'),
           onGoToResearch: () => _navigateTo('shop'),
         );
@@ -168,10 +175,7 @@ class _GameRouterState extends State<GameRouter> {
         );
       default:
         return MainMenuScreen(
-          onStartCampaign: () => _navigateTo('galaxies'),
-          onStartGame: () => _navigateTo('select'),
-          onOpenShop: () => _navigateTo('shop'),
-          onOpenMarket: () => _navigateTo('market'),
+          onEnterBridge: () => _navigateTo('bridge'),
         );
     }
   }

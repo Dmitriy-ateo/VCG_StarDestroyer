@@ -38,19 +38,28 @@ class SectorGenerator {
     // Pick a random template
     final chosenTemplate = possibleTemplates[_random.nextInt(possibleTemplates.length)];
 
+    final LevelData level;
     switch (chosenTemplate) {
       case 'splitter':
-        return _generateSplitterTemplate(progression, galaxyId);
+        level = _generateSplitterTemplate(progression, galaxyId);
+        break;
       case 'bomb':
-        return _generateBombTemplate(progression, galaxyId);
+        level = _generateBombTemplate(progression, galaxyId);
+        break;
       case 'portal':
-        return _generatePortalTemplate(progression, galaxyId);
+        level = _generatePortalTemplate(progression, galaxyId);
+        break;
       case 'gravity':
-        return _generateGravityTemplate(progression, galaxyId);
+        level = _generateGravityTemplate(progression, galaxyId);
+        break;
       case 'reflector':
       default:
-        return _generateReflectorTemplate(progression, galaxyId);
+        level = _generateReflectorTemplate(progression, galaxyId);
+        break;
     }
+
+    _enforceNoDirectHitForAdvancedGalaxies(level, galaxyId);
+    return level;
   }
 
   static String _getRandomPlanetName() {
@@ -480,6 +489,233 @@ class SectorGenerator {
           requiredLaserPower: reqPower,
         ));
         placedClutter++;
+      }
+    }
+  }
+
+  // Generate a highly challenging Daily Hard Mission requiring all items in that galaxy
+  static LevelData generateDailyHardSector(GameProgression progression, String galaxyId) {
+    final List<PlanetTarget> planets = [];
+    final List<WallBlock> walls = [];
+    final List<DeviceModel> inventory = [];
+
+    final LevelData level;
+    if (galaxyId == 'galaxy_1') {
+      // Galaxy 1: Apprentice puzzle requiring 3 Reflectors (detour around core asteroid wall)
+      planets.add(PlanetTarget(
+        id: "hard_t1",
+        gridX: 4,
+        gridY: 2,
+        name: "SECURITY PATROLLER",
+        color: const Color(0xFFFF5252),
+        isInvader: true,
+        requiredLaserPower: 2,
+      ));
+
+      // Blocker obsidian asteroid barrier
+      walls.add(WallBlock(gridX: 3, gridY: 5, isDestructible: false, type: 'asteroid'));
+      walls.add(WallBlock(gridX: 4, gridY: 5, isDestructible: false, type: 'asteroid'));
+      walls.add(WallBlock(gridX: 2, gridY: 5, isDestructible: false, type: 'asteroid'));
+
+      inventory.addAll([
+        DeviceModel(id: "hard_ref1", type: DeviceType.reflector),
+        DeviceModel(id: "hard_ref2", type: DeviceType.reflector),
+        DeviceModel(id: "hard_ref3", type: DeviceType.reflector),
+      ]);
+
+      level = LevelData(
+        id: 991,
+        name: "DAILY HARD: APPRENTICE BLOCKADE",
+        description: "Rebel blockade ships have intercepted our inner relays. Route a 3-reflector detour around the central asteroid screen to vaporize the patroller ship!",
+        deathStarX: 3,
+        deathStarY: 11,
+        deathStarInitialAngle: -90.0,
+        planets: planets,
+        walls: walls,
+        availableInventory: inventory,
+        creditsReward: 500,
+        researchPointsReward: 150,
+      );
+    } else if (galaxyId == 'galaxy_2') {
+      // Galaxy 2: Medium puzzle requiring Reflectors, Splitters, and Bombs!
+      planets.add(PlanetTarget(
+        id: "hard_t1",
+        gridX: 1,
+        gridY: 2,
+        name: "ESCORT CRUISER",
+        color: const Color(0xFFFF7E00),
+        isInvader: true,
+        requiredLaserPower: 3,
+      ));
+      planets.add(PlanetTarget(
+        id: "hard_t2",
+        gridX: 5,
+        gridY: 2,
+        name: "SECURITY COMMANDER",
+        color: const Color(0xFFFF5252),
+        isInvader: true,
+        requiredLaserPower: 3, // Shielded!
+      ));
+
+      // Blocker asteroid screen
+      walls.add(WallBlock(gridX: 3, gridY: 4, isDestructible: false, type: 'asteroid'));
+      walls.add(WallBlock(gridX: 3, gridY: 5, isDestructible: false, type: 'asteroid'));
+      walls.add(WallBlock(gridX: 2, gridY: 2, isDestructible: false, type: 'asteroid'));
+
+      inventory.addAll([
+        DeviceModel(id: "hard_ref1", type: DeviceType.reflector),
+        DeviceModel(id: "hard_ref2", type: DeviceType.reflector),
+        DeviceModel(id: "hard_split1", type: DeviceType.splitter, splitAngleDegrees: 180.0),
+        DeviceModel(id: "hard_bomb1", type: DeviceType.bomb),
+      ]);
+
+      level = LevelData(
+        id: 992,
+        name: "DAILY HARD: INTRUDER SQUADRON",
+        description: "Rebel cruiser patrols have warped into the nebular sector! Align a 180° splitter and detonate a deployable volatile bomb to defeat the shielded squadron commander and escort cruiser!",
+        deathStarX: 3,
+        deathStarY: 11,
+        deathStarInitialAngle: -90.0,
+        planets: planets,
+        walls: walls,
+        availableInventory: inventory,
+        creditsReward: 500,
+        researchPointsReward: 150,
+      );
+    } else {
+      // Galaxy 3: Grand Admiral puzzle requiring Portals, Gravity Wells, Splitters, Bombs, Reflectors!
+      planets.add(PlanetTarget(
+        id: "hard_t1",
+        gridX: 2,
+        gridY: 1,
+        name: "DEFENSIVE FIGHTER",
+        color: const Color(0xFFFF7E00),
+        isInvader: true,
+        requiredLaserPower: 4,
+      ));
+      planets.add(PlanetTarget(
+        id: "hard_t2",
+        gridX: 6,
+        gridY: 1,
+        name: "DREADNOUGHT CORES",
+        color: const Color(0xFFFF5252),
+        isInvader: true,
+        requiredLaserPower: 4,
+      ));
+
+      // Asteroid labyrinth layouts
+      walls.add(WallBlock(gridX: 3, gridY: 3, isDestructible: false, type: 'asteroid'));
+      walls.add(WallBlock(gridX: 4, gridY: 3, isDestructible: false, type: 'asteroid'));
+      walls.add(WallBlock(gridX: 3, gridY: 7, isDestructible: false, type: 'asteroid'));
+
+      inventory.addAll([
+        DeviceModel(id: "hard_ref1", type: DeviceType.reflector),
+        DeviceModel(id: "hard_ref2", type: DeviceType.reflector),
+        DeviceModel(id: "hard_split1", type: DeviceType.splitter, splitAngleDegrees: 180.0),
+        DeviceModel(id: "hard_well1", type: DeviceType.gravityWell),
+        DeviceModel(id: "hard_portal1", type: DeviceType.portal),
+        DeviceModel(id: "hard_bomb1", type: DeviceType.bomb),
+      ]);
+
+      level = LevelData(
+        id: 993,
+        name: "DAILY HARD: DREADNOUGHT BREACH",
+        description: "An elite dreadnought squadron blocks the outer portal gate! Deploy portal warp points and singular gravity wells to slingshot the superlaser around obsidian clusters to target the security core!",
+        deathStarX: 3,
+        deathStarY: 11,
+        deathStarInitialAngle: -90.0,
+        planets: planets,
+        walls: walls,
+        availableInventory: inventory,
+        creditsReward: 500,
+        researchPointsReward: 150,
+      );
+    }
+
+    _enforceNoDirectHitForAdvancedGalaxies(level, galaxyId);
+    return level;
+  }
+
+  // Ensures no planet can be hit directly by just aiming from the Death Star in Galaxy 2 and beyond
+  static void _enforceNoDirectHitForAdvancedGalaxies(LevelData level, String galaxyId) {
+    if (galaxyId == 'galaxy_1') return;
+
+    for (var planet in level.planets) {
+      final startX = level.deathStarX + 0.5;
+      final startY = level.deathStarY + 0.5;
+      final targetX = planet.gridX + 0.5;
+      final targetY = planet.gridY + 0.5;
+
+      final dx = targetX - startX;
+      final dy = targetY - startY;
+      final distance = sqrt(dx * dx + dy * dy);
+      
+      if (distance == 0) continue;
+
+      final stepX = dx / distance;
+      final stepY = dy / distance;
+
+      final Set<String> wallCoords = level.walls.map((w) => "${w.gridX},${w.gridY}").toSet();
+
+      bool isDirectPathUnblocked = true;
+      final List<Point<int>> pathCells = [];
+
+      // Trace the straight line with steps of 0.1 cells
+      final steps = (distance * 10).toInt();
+      for (int i = 1; i < steps; i++) {
+        final currentX = startX + stepX * (i * 0.1);
+        final currentY = startY + stepY * (i * 0.1);
+
+        final cellX = currentX.floor();
+        final cellY = currentY.floor();
+
+        if (cellX == planet.gridX && cellY == planet.gridY) {
+          break;
+        }
+        if (cellX < 0 || cellX >= 8 || cellY < 0 || cellY >= 12) {
+          break;
+        }
+
+        final cellKey = "$cellX,$cellY";
+        if (wallCoords.contains(cellKey)) {
+          isDirectPathUnblocked = false;
+          break;
+        }
+
+        if (cellX != level.deathStarX || cellY != level.deathStarY) {
+          final pt = Point<int>(cellX, cellY);
+          if (!pathCells.contains(pt)) {
+            pathCells.add(pt);
+          }
+        }
+      }
+
+      // If the direct ray path to the planet is unblocked, we must block it
+      if (isDirectPathUnblocked) {
+        Point<int>? blockCell;
+        
+        // Choose a cell along the path that is a safe distance from both shooter and target
+        for (final cell in pathCells) {
+          final distFromDS = (cell.x - level.deathStarX).abs() + (cell.y - level.deathStarY).abs();
+          final distFromPlanet = (cell.x - planet.gridX).abs() + (cell.y - planet.gridY).abs();
+          
+          if (distFromDS >= 2 && distFromPlanet >= 1) {
+            blockCell = cell;
+            break;
+          }
+        }
+
+        // Fallback to the middle cell if no cells fit the distance margin
+        blockCell ??= pathCells.isNotEmpty ? pathCells[pathCells.length ~/ 2] : null;
+
+        if (blockCell != null) {
+          level.walls.add(WallBlock(
+            gridX: blockCell.x,
+            gridY: blockCell.y,
+            isDestructible: false,
+            type: 'asteroid',
+          ));
+        }
       }
     }
   }
