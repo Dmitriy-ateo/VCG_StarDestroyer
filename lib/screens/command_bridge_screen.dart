@@ -692,10 +692,10 @@ class _HotspotOverlayPainter extends CustomPainter {
     Offset tl, tr, br, bl;
     if (id == 'campaign') {
       // Space Window viewport (horizontal perspective shift)
-      tl = Offset(size.width * 0.02, size.height * 0.12);
-      tr = Offset(size.width * 0.98, size.height * 0.22);
-      br = Offset(size.width * 0.98, size.height * 0.88);
-      bl = Offset(size.width * 0.08, size.height * 0.88);
+      tl = Offset(size.width * 0.12, size.height * 0.22);
+      tr = Offset(size.width * 0.98, size.height * 0.17);
+      br = Offset(size.width * 0.98, size.height * 1.02);
+      bl = Offset(size.width * 0.12, size.height * 0.90);
     } else if (id == 'briefing') {
       // Bottom-Left desk monitor screen (tilted horizontally and skewed)
       tl = Offset(size.width * 0.12, size.height * 0.14);
@@ -710,10 +710,10 @@ class _HotspotOverlayPainter extends CustomPainter {
       bl = Offset(size.width * 0.26, size.height * 0.92);
     } else if (id == 'market') {
       // Left door lock display (highly slanted vertical side perspective)
-      tl = Offset(size.width * 0.34, size.height * 0.26);
-      tr = Offset(size.width * 0.84, size.height * 0.12);
-      br = Offset(size.width * 0.84, size.height * 0.82);
-      bl = Offset(size.width * 0.34, size.height * 0.96);
+      tl = Offset(size.width * 0.24, size.height * 0.02);
+      tr = Offset(size.width * 0.96, size.height * 0.05);
+      br = Offset(size.width * 1.0, size.height * 0.86);
+      bl = Offset(size.width * 0.24, size.height * 0.98);
     } else if (id == 'training') {
       // Bottom-Right control terminal console screen (slanted isometric screen)
       tl = Offset(size.width * 0.12, size.height * 0.25);
