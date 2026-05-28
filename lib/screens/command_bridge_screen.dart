@@ -277,7 +277,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                           left: w * 0.06,
                           top: h * 0.30,
                           width: w * 0.22,
-                          height: h * 0.48, // Increased from 0.30 to cover the door frame down to 0.78
+                          height: h * 0.30, // Perfectly aligned with the upper sliding door frame
                           centerOffset: const Offset(0.0, 0.0),
                           onTap: () {
                             _triggerHaptic();
@@ -710,10 +710,10 @@ class _HotspotOverlayPainter extends CustomPainter {
       bl = Offset(size.width * 0.26, size.height * 0.92);
     } else if (id == 'market') {
       // Left door lock display (highly slanted vertical side perspective)
-      tl = Offset(size.width * 0.20, size.height * 0.14);
-      tr = Offset(size.width * 0.78, size.height * 0.22);
-      br = Offset(size.width * 0.78, size.height * 0.95);
-      bl = Offset(size.width * 0.20, size.height * 0.95);
+      tl = Offset(size.width * 0.14, size.height * 0.15);
+      tr = Offset(size.width * 0.66, size.height * 0.25);
+      br = Offset(size.width * 0.66, size.height * 0.95);
+      bl = Offset(size.width * 0.14, size.height * 0.92);
     } else if (id == 'training') {
       // Bottom-Right control terminal console screen (slanted isometric screen)
       tl = Offset(size.width * 0.12, size.height * 0.25);
