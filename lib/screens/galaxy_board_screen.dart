@@ -27,6 +27,12 @@ class GalaxyBoardScreen extends StatefulWidget {
     required this.onGoToResearch,
   });
 
+  // Public static accessors for automated testing verification
+  static int get completedDailyCount => _GalaxyBoardScreenState._completedDailyCount;
+  static set completedDailyCount(int val) => _GalaxyBoardScreenState._completedDailyCount = val;
+  static Map<String, List<QuestModel>>? get sessionDailyQuestsMap => _GalaxyBoardScreenState._sessionDailyQuestsMap;
+  static set sessionDailyQuestsMap(Map<String, List<QuestModel>>? val) => _GalaxyBoardScreenState._sessionDailyQuestsMap = val;
+
   @override
   State<GalaxyBoardScreen> createState() => _GalaxyBoardScreenState();
 }
@@ -71,6 +77,11 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     _sessionDailyHardQuestMap ??= {};
     _sessionDailyHardDateStrMap ??= {};
 
+    if (_completedDailyCount >= 10) {
+      _sessionDailyHardQuestMap![widget.galaxyId] = null;
+      return;
+    }
+
     final currentQuest = _sessionDailyHardQuestMap![widget.galaxyId];
     final currentDateStr = _sessionDailyHardDateStrMap![widget.galaxyId];
 
@@ -103,6 +114,11 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   void _initializeSessionDailyQuests(GameProgression progression) {
     _sessionDailyQuestsMap ??= {};
 
+    if (_completedDailyCount >= 10) {
+      _sessionDailyQuestsMap![widget.galaxyId] = [];
+      return;
+    }
+
     if (_sessionDailyQuestsMap![widget.galaxyId] == null) {
       _sessionDailyQuestsMap![widget.galaxyId] = [];
       for (int i = 0; i < 3; i++) {
@@ -114,7 +130,12 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       final beforeCount = _sessionDailyQuestsMap![widget.galaxyId]!.length;
       _sessionDailyQuestsMap![widget.galaxyId]!.removeWhere((q) => completedIds.contains(q.id));
       final completedDelta = beforeCount - _sessionDailyQuestsMap![widget.galaxyId]!.length;
-      _completedDailyCount += completedDelta;
+      _completedDailyCount = min(_completedDailyCount + completedDelta, 10);
+
+      if (_completedDailyCount >= 10) {
+        _sessionDailyQuestsMap![widget.galaxyId] = [];
+        return;
+      }
 
       // Spawning new daily sectors up to a maximum limit of 10 completions per session
       if (_completedDailyCount < 10) {
@@ -144,7 +165,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     );
   }
 
-  // Initialize and refresh side quests list dynamically refilling up to 3 active targets
+  // Initialize and refresh side quests list dynamically refilling up to 7 active targets
   void _initializeSessionSideQuests(GalaxyModel galaxy, GameProgression progression) {
     _sessionSideQuestsMap ??= {};
 
@@ -155,8 +176,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
           .toList();
       _sessionSideQuestsMap![galaxy.id] = galaxySideQuests;
 
-      // Refill to 3 active targets if starting with less
-      while (_sessionSideQuestsMap![galaxy.id]!.length < 3) {
+      // Refill to 7 active targets if starting with less
+      while (_sessionSideQuestsMap![galaxy.id]!.length < 7) {
         _sessionSideQuestsMap![galaxy.id]!.add(_generateUniqueSideQuest(galaxy, progression));
       }
     } else {
@@ -164,8 +185,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       final completedIds = progression.completedQuestIds;
       _sessionSideQuestsMap![galaxy.id]!.removeWhere((q) => completedIds.contains(q.id));
 
-      // Refill back to 3 active targets using procedural side quests
-      while (_sessionSideQuestsMap![galaxy.id]!.length < 3) {
+      // Refill back to 7 active targets using procedural side quests
+      while (_sessionSideQuestsMap![galaxy.id]!.length < 7) {
         _sessionSideQuestsMap![galaxy.id]!.add(_generateUniqueSideQuest(galaxy, progression));
       }
     }
@@ -173,7 +194,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
   QuestModel _generateUniqueSideQuest(GalaxyModel galaxy, GameProgression progression) {
     final sideLevel = SectorGenerator.generateDailySector(progression, galaxy.id);
-    final uniqueId = "side_quest_${sideLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
+    final uniqueId = "side_quest_${galaxy.id}_${sideLevel.id}_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(1000)}";
 
     final List<String> sideTitles = [
       "Tactical Drift",
@@ -187,6 +208,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     ];
     final title = "${sideTitles[Random().nextInt(sideTitles.length)]} ${10 + Random().nextInt(90)}";
 
+    final galaxyNum = int.tryParse(galaxy.id.replaceAll('galaxy_', '')) ?? 1;
+
     final customizedLevel = LevelData(
       id: sideLevel.id,
       name: title,
@@ -198,8 +221,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       walls: sideLevel.walls,
       availableInventory: sideLevel.availableInventory,
       presetDevices: sideLevel.presetDevices,
-      creditsReward: 150 + Random().nextInt(100),
-      researchPointsReward: 15 + Random().nextInt(15),
+      creditsReward: 150 + galaxyNum * 50 + Random().nextInt(100),
+      researchPointsReward: 15 + galaxyNum * 5 + Random().nextInt(15),
     );
 
     return QuestModel(
@@ -226,7 +249,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
         for (final extAngle in existingAngles) {
           final diff = (angle - extAngle).abs();
           final normDiff = min(diff, 2.0 * pi - diff);
-          if (normDiff < 0.7) { // Enforce ~40 degrees minimum separation
+          if (normDiff < 0.5) { // Enforce minimum separation to accommodate 7 active nodes
             tooClose = true;
             break;
           }
@@ -273,6 +296,10 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
           // Daily Hard Quest: 1 highly challenging mission per day in a random galaxy
           _initializeDailyHardQuest(progression);
           final currentDailyHardQuest = _sessionDailyHardQuestMap?[widget.galaxyId];
+
+          if (_completedDailyCount >= 10 && _selectedQuest != null && _selectedQuest!.type == QuestType.daily) {
+            _selectedQuest = null;
+          }
 
           // Collect already-computed angles for both orbits to prevent overlapping
           final List<double> sideAngles = [];
@@ -388,12 +415,22 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                         final mapWidth = constraints.maxWidth;
                         final mapHeight = constraints.maxHeight;
 
-                        final center = Offset(mapWidth / 2.0, mapHeight * 0.42);
+                        // Center the solar system map vertically to balance top/bottom space
+                        final center = Offset(mapWidth / 2.0, mapHeight * 0.48);
 
-                        // Pseudo-3D vertically compressed elliptical orbit track radii (responsive horizontal bounds safe)
-                        final double maxRadiusX = mapWidth / 2.0 - 36.0;
+                        // Calculate aspect ratio to dynamically adjust the vertical squish (orbitYRadii multiplier)
+                        // If we have excess vertical space (tall screen), we open up the orbits to separate nodes and fill height.
+                        final double aspectRatio = mapHeight / mapWidth;
+                        final double yMultiplier = (0.35 * aspectRatio).clamp(0.35, 0.65);
+
+                        // Slightly increase horizontal space usage if screen allows, keeping safety margin
+                        final double maxRadiusX = mapWidth / 2.0 - 24.0;
                         final orbitXRadii = [maxRadiusX * 0.42, maxRadiusX * 0.73, maxRadiusX * 1.00];
-                        final orbitYRadii = [orbitXRadii[0] * 0.35, orbitXRadii[1] * 0.35, orbitXRadii[2] * 0.35];
+                        final orbitYRadii = [
+                          orbitXRadii[0] * yMultiplier,
+                          orbitXRadii[1] * yMultiplier,
+                          orbitXRadii[2] * yMultiplier,
+                        ];
 
                         return AnimatedBuilder(
                           animation: _animationController,
@@ -887,7 +924,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                   ),
                 ),
                 Text(
-                  "$_completedDailyCount / 10 DONE",
+                  "${min(_completedDailyCount, 10)} / 10 DONE",
                   style: const TextStyle(
                     color: StyleGuide.tertiary,
                     fontSize: 9.5,
@@ -901,7 +938,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: _completedDailyCount / 10.0,
+                value: min(_completedDailyCount, 10) / 10.0,
                 minHeight: 4.5,
                 backgroundColor: StyleGuide.neutralCard,
                 valueColor: const AlwaysStoppedAnimation<Color>(StyleGuide.tertiary),

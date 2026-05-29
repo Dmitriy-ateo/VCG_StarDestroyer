@@ -25,16 +25,25 @@ class ExplosionEvent {
   });
 }
 
+class AudioTriggerEvent {
+  final String sfxName;
+  final int stepIndex;
+
+  AudioTriggerEvent(this.sfxName, this.stepIndex);
+}
+
 class LaserTraceResult {
   final List<List<Offset>> paths; // All laser paths (multiple due to splitters)
   final Set<String> hitPlanetIds; // Planets hit
   final List<ExplosionEvent> explosions; // Bomb/planet explosions
+  final List<AudioTriggerEvent> audioTriggers; // Dynamic audio triggers (reflections, teleports)
   final bool success; // Did we destroy all planets?
 
   LaserTraceResult({
     required this.paths,
     required this.hitPlanetIds,
     required this.explosions,
+    required this.audioTriggers,
     required this.success,
   });
 }
@@ -101,6 +110,7 @@ class LaserCalculator {
     final List<List<Offset>> finalizedPaths = [];
     final Set<String> hitPlanetIds = {};
     final List<ExplosionEvent> explosions = [];
+    final List<AudioTriggerEvent> audioTriggers = [];
     
     // Track bomb grids that have exploded
     final Set<String> explodedBombIds = {};
@@ -256,6 +266,7 @@ class LaserCalculator {
                 if (beam.path.isNotEmpty) {
                   beam.path[beam.path.length - 1] = ip;
                 }
+                audioTriggers.add(AudioTriggerEvent('audio/deflect.mp3', step));
               } else {
                 // Not a real collision with the mirror segment. 
                 // Remove from visited so it can be re-evaluated next step.
@@ -295,6 +306,7 @@ class LaserCalculator {
 
               // Redirect the original beam to direction 1
               beam.dir = dir1;
+              audioTriggers.add(AudioTriggerEvent('audio/deflect.mp3', step));
               if (splitterLevel == 1) {
                 beam.intensity--;
               }
@@ -354,12 +366,41 @@ class LaserCalculator {
                 // Teleport to paired portal center
                 beam.pos = pairCenter;
                 beam.visitedDevices.add(pair.id); // Don't re-trigger immediately
+                audioTriggers.add(AudioTriggerEvent('audio/portal_warp.mp3', step));
 
                 // Teleportation field stabilization upgrade impact
                 final portalLevel = deviceLevels[DeviceType.portal] ?? 1;
                 if (portalLevel == 1) {
                   beam.intensity--; // Unstable Level 1 portal drains 1 laser power!
                 }
+              }
+            }
+            else if (dev.type == DeviceType.floatingAsteroid) {
+              if (!explodedBombIds.contains(dev.id)) {
+                explodedBombIds.add(dev.id);
+
+                // Slight deflection based on asteroid angleDegrees (-15 to 45 deg, etc.)
+                final double shiftRad = dev.angleDegrees * pi / 180.0;
+                final double currentAngleRad = atan2(beam.dir.dy, beam.dir.dx);
+                final double newAngleRad = currentAngleRad + shiftRad;
+                
+                beam.dir = Offset(cos(newAngleRad), sin(newAngleRad));
+                beam.dir = beam.dir / beam.dir.distance; // Normalize
+
+                // Snap current beam position to asteroid center
+                beam.pos = devCenter;
+                if (beam.path.isNotEmpty) {
+                  beam.path[beam.path.length - 1] = devCenter;
+                }
+
+                // Shattering debris explosion
+                explosions.add(ExplosionEvent(
+                  gridPos: devCenter,
+                  stepIndex: step,
+                  radius: 1.3, // organic dust debris cloud
+                  targetId: dev.id,
+                  isBomb: true,
+                ));
               }
             }
           }
@@ -414,6 +455,7 @@ class LaserCalculator {
       paths: finalizedPaths,
       hitPlanetIds: hitPlanetIds,
       explosions: explosions,
+      audioTriggers: audioTriggers,
       success: success,
     );
   }

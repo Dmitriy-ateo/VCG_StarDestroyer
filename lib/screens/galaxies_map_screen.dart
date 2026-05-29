@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../models/galaxy_model.dart';
 import '../models/game_progression.dart';
 import '../game/game_controller.dart';
+import 'galaxy_board_screen.dart';
 
 class GalaxiesMapScreen extends StatefulWidget {
   final GameController controller;
@@ -38,10 +39,25 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
       duration: const Duration(seconds: 8), // Slow, elegant orbital speed
     )..repeat();
 
-    // Scroll automatically to the bottom on load to highlight the latest active unlocked galaxy
+    // Scroll automatically on load to focus on the latest active unlocked galaxy
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        final progression = widget.controller.progression;
+        final galaxies = preloadedGalaxies;
+        
+        int latestUnlockedIndex = 0;
+        for (int i = 0; i < galaxies.length; i++) {
+          if (galaxies[i].checkUnlockStatus(progression)) {
+            latestUnlockedIndex = i;
+          }
+        }
+
+        final double maxScroll = _scrollController.position.maxScrollExtent;
+        final double fraction = galaxies.length > 1
+            ? (1.0 - (latestUnlockedIndex / (galaxies.length - 1)))
+            : 1.0;
+
+        _scrollController.jumpTo(maxScroll * fraction);
       }
     });
   }
@@ -224,7 +240,9 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                   final isCompleted = progression.completedGalaxyIds.contains(galaxy.id);
                                   final activeLoreGalaxyId = _getActiveLoreGalaxyId(progression);
                                   final isTargetLoreGalaxy = activeLoreGalaxyId == galaxy.id;
-                                  final isHardThreatActive = progression.dailyHardGalaxyId == galaxy.id && !progression.dailyHardCompleted;
+                                  final isHardThreatActive = progression.dailyHardGalaxyId == galaxy.id &&
+                                      !progression.dailyHardCompleted &&
+                                      GalaxyBoardScreen.completedDailyCount < 10;
                                     
                                   return Positioned(
                                     left: center.dx - nodeSize / 2,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/device_model.dart';
 import '../models/game_progression.dart';
 import '../game/game_controller.dart';
+import '../services/audio_service.dart';
 
 class ResearchShopScreen extends StatelessWidget {
   final GameController controller;
@@ -281,6 +282,15 @@ class ResearchShopScreen extends StatelessWidget {
                                   cost: GameProgression.getDeviceResearchCost(DeviceType.portal),
                                   isUnlocked: progression.unlockedDevices.contains(DeviceType.portal),
                                 ),
+                                const SizedBox(height: 16),
+                                _buildDeviceResearchCard(
+                                  context: context,
+                                  title: "Floating Deflection Asteroid",
+                                  description: "Organic space rocks. Shatters when hit, deflecting lasers at its precise placement angle.",
+                                  type: DeviceType.floatingAsteroid,
+                                  cost: GameProgression.getDeviceResearchCost(DeviceType.floatingAsteroid),
+                                  isUnlocked: progression.unlockedDevices.contains(DeviceType.floatingAsteroid),
+                                ),
                               ],
                             ),
                           ),
@@ -512,6 +522,7 @@ class ResearchShopScreen extends StatelessWidget {
                         onPressed: canBuy
                             ? () {
                                 controller.buyUpgrade(upgradeType);
+                                AudioService.instance.playSfx('audio/upgrade.mp3');
                                 final messenger = ScaffoldMessenger.of(context);
                                 messenger.clearSnackBars();
                                 final screenHeight = MediaQuery.of(context).size.height;
@@ -782,6 +793,7 @@ class ResearchShopScreen extends StatelessWidget {
                           onPressed: canUpgrade
                               ? () {
                                   controller.upgradeDevice(type);
+                                  AudioService.instance.playSfx('audio/upgrade.mp3');
                                   final messenger = ScaffoldMessenger.of(context);
                                   messenger.clearSnackBars();
                                   final screenHeight = MediaQuery.of(context).size.height;

@@ -187,7 +187,10 @@ const String levelsJsonConfig = r'''
       { "gridX": 3, "gridY": 5, "isDestructible": false },
       { "gridX": 4, "gridY": 3, "isDestructible": false },
       { "gridX": 4, "gridY": 4, "isDestructible": false },
-      { "gridX": 4, "gridY": 5, "isDestructible": false }
+      { "gridX": 4, "gridY": 5, "isDestructible": false },
+      { "gridX": 5, "gridY": 3, "isDestructible": false },
+      { "gridX": 5, "gridY": 4, "isDestructible": false },
+      { "gridX": 5, "gridY": 5, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_ref1", "type": "reflector" }
@@ -218,7 +221,10 @@ const String levelsJsonConfig = r'''
     ],
     "walls": [
       { "gridX": 6, "gridY": 7, "isDestructible": false },
-      { "gridX": 3, "gridY": 5, "isDestructible": false }
+      { "gridX": 3, "gridY": 5, "isDestructible": false },
+      { "gridX": 5, "gridY": 5, "isDestructible": false },
+      { "gridX": 5, "gridY": 6, "isDestructible": false },
+      { "gridX": 5, "gridY": 7, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_ref1", "type": "reflector" }
@@ -256,7 +262,10 @@ const String levelsJsonConfig = r'''
       }
     ],
     "walls": [
-      { "gridX": 5, "gridY": 5, "isDestructible": false }
+      { "gridX": 5, "gridY": 5, "isDestructible": false },
+      { "gridX": 5, "gridY": 6, "isDestructible": false },
+      { "gridX": 5, "gridY": 7, "isDestructible": false },
+      { "gridX": 5, "gridY": 8, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_well1", "type": "gravityWell" },
@@ -284,7 +293,9 @@ const String levelsJsonConfig = r'''
       }
     ],
     "walls": [
-      { "gridX": 6, "gridY": 3, "isDestructible": false }
+      { "gridX": 6, "gridY": 3, "isDestructible": false },
+      { "gridX": 4, "gridY": 6, "isDestructible": false },
+      { "gridX": 5, "gridY": 6, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_ref1", "type": "reflector" },
@@ -350,7 +361,10 @@ const String levelsJsonConfig = r'''
     ],
     "walls": [
       { "gridX": 3, "gridY": 4, "isDestructible": false },
-      { "gridX": 4, "gridY": 4, "isDestructible": false }
+      { "gridX": 4, "gridY": 4, "isDestructible": false },
+      { "gridX": 4, "gridY": 6, "isDestructible": false },
+      { "gridX": 4, "gridY": 7, "isDestructible": false },
+      { "gridX": 4, "gridY": 8, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_well1", "type": "gravityWell" },
@@ -379,7 +393,9 @@ const String levelsJsonConfig = r'''
     ],
     "walls": [
       { "gridX": 3, "gridY": 5, "isDestructible": false },
-      { "gridX": 5, "gridY": 5, "isDestructible": false }
+      { "gridX": 5, "gridY": 5, "isDestructible": false },
+      { "gridX": 1, "gridY": 8, "isDestructible": false },
+      { "gridX": 2, "gridY": 8, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_ref1", "type": "reflector" },
@@ -416,7 +432,9 @@ const String levelsJsonConfig = r'''
       }
     ],
     "walls": [
-      { "gridX": 3, "gridY": 3, "isDestructible": false }
+      { "gridX": 3, "gridY": 3, "isDestructible": false },
+      { "gridX": 2, "gridY": 4, "isDestructible": false },
+      { "gridX": 4, "gridY": 4, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_split1", "type": "splitter", "splitAngleDegrees": 180.0 },
@@ -444,7 +462,11 @@ const String levelsJsonConfig = r'''
         "color": "0xFFFFB703"
       }
     ],
-    "walls": [],
+    "walls": [
+      { "gridX": 5, "gridY": 6, "isDestructible": false },
+      { "gridX": 5, "gridY": 7, "isDestructible": false },
+      { "gridX": 5, "gridY": 8, "isDestructible": false }
+    ],
     "availableInventory": [
       { "id": "t_ref1", "type": "reflector" }
     ],
@@ -474,7 +496,10 @@ const String levelsJsonConfig = r'''
       }
     ],
     "walls": [
-      { "gridX": 2, "gridY": 3, "isDestructible": false }
+      { "gridX": 2, "gridY": 3, "isDestructible": false },
+      { "gridX": 5, "gridY": 4, "isDestructible": false },
+      { "gridX": 5, "gridY": 5, "isDestructible": false },
+      { "gridX": 5, "gridY": 6, "isDestructible": false }
     ],
     "availableInventory": [
       { "id": "t_well1", "type": "gravityWell" }

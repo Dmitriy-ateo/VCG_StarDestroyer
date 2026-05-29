@@ -3,8 +3,9 @@
 This guide establishes the rules of engagement, game mechanics, component parameters, and design guidelines for **Star Destroyer: Single Shot**. 
 
 > [!IMPORTANT]
-> **MANDATORY RULE FOR LEVEL DESIGNERS**:
-> When adding a new Sector (Level) to the database, you **MUST** ensure and verify that the level is mathematically and logically solvable using the provided inventory blueprints and constraints. Obstructing a required placement coordinate with a static wall or planet is strictly prohibited.
+> **MANDATORY RULES FOR DEVELOPERS & DESIGNERS**:
+> 1. **Solvability Check**: When adding a new Sector (Level) to the database, you **MUST** ensure and verify that the level is mathematically and logically solvable using the provided inventory blueprints and constraints. Obstructing a required placement coordinate with a static wall or planet is strictly prohibited.
+> 2. **Documentation Synchronization (The Rule for New Game Changes)**: When introducing or modifying any new game mechanic, item, galaxy, chassis upgrade, or interface hotspot, you **MUST** immediately update this Guide (`GAME_GUIDE.md`) to document the rules, mechanics, physics, and design specifications of the new item/change. Keeping this guide perfectly synchronized with codebase changes is a strict requirement.
 
 ---
 
@@ -50,6 +51,11 @@ Players are equipped with high-tech tactical modules to steer and manipulate the
 ### 3.4 Portals (Einstein-Rosen Pairs)
 *   **Function**: Instantly teleports a laser beam entering Portal A out of Portal B, maintaining the beam's original travel angle.
 *   **Design Use**: Used to traverse large asteroid obstacles or cross extreme distances instantly.
+
+### 3.5 Floating Deflection Asteroids (Volcanic Space Rocks)
+*   **Function**: A beatable, single-use asteroid that intercepts the laser and deflects its direction relative to the asteroid's placed angle of rotation ($R = I + \theta_{\text{asteroid}}$).
+*   **Shatter Physics**: On laser impact, the asteroid detonates immediately (registering an organic dust debris cloud explosion) and is deactivated, preventing infinite laser loops.
+*   **Design Use**: Vital in outer-rim high-density fields to steer the laser around static obsidian barriers and redirect it onto hidden planets.
 
 ---
 
@@ -117,9 +123,9 @@ graph TD
     - *Volatile Bombs*: A Level $L$ bomb can only destroy planets with a defense shield rating $\le L$. Highly shielded planets survive nearby low-level blasts, urging players to prioritize bomb level upgrades.
 
 #### Tier 3: Grand Admiral Sectors (Galaxy 3 — Outer Horizon & Advanced Training)
-*   **Difficulty Rating**: Hard / Master (Sector 6, Training Programs 7-15)
+*   **Difficulty Rating**: Hard / Master (Sectors 6-18)
 *   **Core Concepts**: Multi-dimensional Einstein-Rosen wormhole transits, curved gravitational slingshot orbits, and complex bifurcated layouts.
-*   **Obstacles**: Shielded Planets (Level 2+ target planets requiring high laser intensity/bombs) and elaborate obsidian labyrinths.
+*   **Obstacles**: Shielded Planets (Level 2+ target planets requiring high laser intensity/bombs) and elaborate obsidian labyrin labyrinths.
 *   **Unlock Requirements**:
     - Clearance of Galaxy 2.
     - **Laser Intensity Rank F ★★+** (Star Rating $\ge 2$).
@@ -129,6 +135,15 @@ graph TD
 *   **Level-Dependent Balance Mechanics**:
     - *Einstein-Rosen Portals*: Unstable Level 1 portals drain 1 laser power during wormhole transit. Upgrading to Level 2+ stabilizes the warp gate for lossless transit.
     - *Gravity Wells*: Upgrading increases gravitational active attraction radius ($Radius = 2.5 + 0.3 \times Level$) and pull strength ($0.10 + 0.03 \times Level$), enabling sharp vector curves.
+
+#### Tier 4: Fleet Admiral Sectors (Galaxy 7 — Asteroid Frontier)
+*   **Difficulty Rating**: Master / S-Rank (Sectors 19-20)
+*   **Core Concepts**: Organic vector deflection, single-use refractive pathing, and multi-beam splitter coordination in extreme dense debris fields.
+*   **Obstacles**: Armored targets, static asteroid walls, and organic volcanic drift blockades.
+*   **Unlock Requirements**:
+    - Clearance of Galaxy 6.
+    - **Laser Intensity Rank F ★★+** (Star Rating $\ge 2$).
+*   **Available Inventory**: Floating Deflection Asteroids, Prism Splitters, Reflectors.
 
 #### 5.1.1 Daily Hard Softlock Protection Rule
 When the global **Daily Hard** threat modifier is active, standard sectors in advanced galaxies undergo structural threat hardening, adding defensive shields to targets and placing extra obsidian obstructions.
@@ -140,6 +155,21 @@ To preserve challenge, spatial complexity, and target puzzle depth across proced
 *   **The Goal**: Procedural layouts must force strategic usage of reflective and curved slingshot dynamics (mirrors, splitters, gravity wells, portal relays, and explosive cores) and eliminate trivial diagonal cheats.
 *   **The Constraint**: Starting from **Galaxy 2 (Nebular Depths)** and above, **no generated daily sector or daily hard sector is allowed to have an unblocked, straight line-of-sight path from the Death Star to any planet.** 
 *   **The Mechanism**: The generator automatically traces a ray from the Death Star center `(deathStarX + 0.5, deathStarY + 0.5)` to each planet center `(planet.gridX + 0.5, planet.gridY + 0.5)`. If the path is unblocked, it places an indestructible volcanic asteroid along the vector, safe-guarding the integrity of the puzzle without interfering with the intended curved or multi-bent solution.
+
+#### 5.1.3 Procedural Side Quests Orbital Distribution
+To represent an expansive galactic starmap:
+*   **Orbit Capacity**: Orbit 2 (middle track) hosts exactly **7 active side quests** represented by Assignment beacons.
+*   **Collision Prevention**: Minimum angular separation is reduced from `0.7` to `0.5` radians, ensuring all 7 planets are distributed evenly along the elliptical orbit without overlapping.
+*   **Galaxy-Scaled Rewards**: Rewards scale with galaxy numbers to incentivize deep-space progression:
+    - **Credits**: $150 + \text{GalaxyNum} \times 50 + \text{Random}(100)$
+    - **Research Points**: $15 + \text{GalaxyNum} \times 5 + \text{Random}(15)$
+
+#### 5.1.4 Procedural Difficulty Generator (Galaxy-Based Scaling)
+Daily and procedural side quests dynamically scale their complexity based on the active galaxy number:
+*   **Target Shields**: Target planet defense shields (`requiredLaserPower`) scale linearly: $\text{Shield Power} = \text{GalaxyNum}$ (Galaxy 4 requires Level 4 lasers, Galaxy 6 requires Level 6 lasers), encouraging players to upgrade sub-systems.
+*   **Obstruction Clutter**: Indestructible asteroid clutter density scale: $2 + \text{GalaxyNum}$ walls.
+*   **Barrier Hardening**: Energy shield barriers increase in shield power: $\max(2, \text{GalaxyNum} - 1)$; scrap metal: $\max(1, \text{GalaxyNum} - 2)$.
+*   **Puzzle Complexity**: Advanced items like splitters, portals, and gravity wells are dynamically injected in player inventory (Galaxy 4+) requiring multi-step spatial pathing.
 
 ---
 
@@ -187,3 +217,49 @@ The Command Bridge acts as the central strategic hub of the Star Destroyer, prov
 *   **Training Center (Bottom-Right Terminal)**: Launches simulated sectors for targeting calibration.
 
 All interface hotspots utilize micro glassmorphic tooltips that hover securely clamped within screen boundaries to prevent any visual clipping on mobile aspect ratios.
+
+---
+
+## 7. In-Game Board Tactical Interface
+
+To manage placed modules efficiently on the active grid, players interact with a premium gesture menu:
+*   **Single-Tap Cycles**: Tapping a placed module instantly rotates its orientation clockwise with zero gesture latency, facilitating rapid setups.
+*   **Holographic Radial HUD**: Long-pressing a placed module for **350ms** triggers a cybernetic target lock-on visualization:
+    - Renders a pulsing neon-cyan target circle and bracket guidelines around the selected cell.
+    - Draws a dashed vertical connector line containing a pulsing neon-pink scan dot that leads to a floating control capsule.
+    - The capsule utilizes glassmorphism (`sigma: 10`) with glowing interactive Touch Targets: **ROTATE (↺)** in cyan and **RECLAIM (🗑)** in warning pink.
+*   **Adaptive Boundary Protection**: The HUD automatically monitors grid position. If a device is placed in the top two rows, the leader line and capsule flip downwards to prevent off-screen clipping. The horizontal position clamps to prevent viewport clipping.
+
+---
+
+## 8. Cinematic Sci-Fi Audio System (BGM & SFX)
+
+An immersive, premium soundscape wraps the tactical experience of *Star Destroyer: Single Shot*, creating continuous context-aware audio feedback loops across gameplay stages.
+
+### 8.1 Adaptive Soundtrack (BGM — Looping Tracks)
+*   **Command Bridge Theme (`bridge_music.mp3`)**: A deep, atmospheric cosmic synthesizer pad playing looping space ambient background music in the main strategic bridge.
+*   **Space Battle Theme (`battle_music.mp3`)**: An energetic, fast-tempo retro cyberpunk synth-wave track playing continuously during active tactical level simulation.
+
+### 8.2 Kinetic Propagation Sound Effects (SFX — Polyphonic Clips)
+Sound effects trigger dynamically in real-time corresponding to tactical events and physics interactions:
+*   **Plasma Firing Hum (`laser_fire.mp3`)**: Triggers when initiating the superlaser firing sequence.
+*   **Metallic Deflection Ping (`deflect.mp3`)**: Plays when the laser beam bounces off refractors, splitters, or rotates via deflection.
+*   **Temporal Warp Whoosh (`portal_warp.mp3`)**: Plays on portal transits and black hole gravity bends.
+*   **Volumetric Blast Rumble (`explosion.mp3`)**: Triggers upon bomb detonations and single-use asteroid shattering events.
+*   **Tactical HUD Click (`hud_click.mp3`)**: Plays when navigating menus, rotating inventory tiles, or performing button selections.
+*   **Chime of Upgrades (`upgrade.mp3`)**: Plays on successful R&D tech blueprint upgrades and store purchases.
+*   **Fanfare & Power-down (`victory.mp3` & `defeat.mp3`)**: Triggers triumphant electronic synthesis upon sector completion, or low-power decay static upon failure.
+
+### 8.3 Technical & Architecture Safeguards
+
+#### 8.3.1 Polyphonic Sound Player Manager
+To handle rapid, overlapping sound triggers (e.g. splitters generating concurrent portal transits and asteroid detonations within milliseconds) without audio clipping or sound truncation, the sound system features a **4-Player Polyphonic SFX Pool**. The system cycles playback across separate `AudioPlayer` channels seamlessly.
+
+#### 8.3.2 Glassmorphic Audio Settings Overlay
+Players maintain full, persistent control over audio levels inside the command bridge interface. Real-time toggles modify volume configurations instantly. Preferences are cached securely in local `SharedPreferences` to ensure they persist across app restarts.
+
+#### 8.3.3 VM Test Immunization Guard
+To ensure the automated verification suite remains immune to native channel crashes, `AudioService` monitors for Dart VM test context:
+*   **The Guard**: Detects test environment execution (`Platform.environment.containsKey('FLUTTER_TEST')`).
+*   **The Action**: Automatically bypasses native iOS/Android audio hardware registration, routing all calls into safe, virtualized log mock outputs to ensure the test suite continues running at 100% speed.
+

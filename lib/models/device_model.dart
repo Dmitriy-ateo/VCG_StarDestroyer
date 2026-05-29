@@ -4,6 +4,7 @@ enum DeviceType {
   gravityWell, // Bends the laser path continuously
   bomb,        // Explodes in a radius when hit by the laser
   portal,      // Teleports laser to another portal
+  floatingAsteroid, // Floating beatable asteroid that changes laser direction slightly
 }
 
 class DeviceModel {

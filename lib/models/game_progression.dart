@@ -63,6 +63,7 @@ class GameProgression {
           'splitter_90': 0,
           'splitter_135': 0,
           'splitter_45': 0,
+          'floatingAsteroid': 0,
         },
         chassisRanks = chassisRanks ?? {
           'intensity': 'F',
@@ -85,6 +86,7 @@ class GameProgression {
           DeviceType.bomb: 'F',
           DeviceType.gravityWell: 'F',
           DeviceType.portal: 'F',
+          DeviceType.floatingAsteroid: 'F',
         },
         deviceStars = deviceStars ?? {
           DeviceType.reflector: 0,
@@ -92,6 +94,7 @@ class GameProgression {
           DeviceType.bomb: 0,
           DeviceType.gravityWell: 0,
           DeviceType.portal: 0,
+          DeviceType.floatingAsteroid: 0,
         },
         deviceSubLevels = deviceSubLevels ?? {
           DeviceType.reflector: 1,
@@ -99,6 +102,7 @@ class GameProgression {
           DeviceType.bomb: 1,
           DeviceType.gravityWell: 1,
           DeviceType.portal: 1,
+          DeviceType.floatingAsteroid: 1,
         };
 
   // Effective Sub-System Levels computed via rank and stars (Star Tier Levels, e.g. 1 to 36)
@@ -280,6 +284,7 @@ class GameProgression {
         'splitter_90': 0,
         'splitter_135': 0,
         'splitter_45': 0,
+        'floatingAsteroid': 0,
       }),
       completedGalaxyIds: parseSetString(json['completedGalaxyIds']),
       completedQuestIds: parseSetString(json['completedQuestIds']),
@@ -304,6 +309,7 @@ class GameProgression {
         DeviceType.bomb: 'F',
         DeviceType.gravityWell: 'F',
         DeviceType.portal: 'F',
+        DeviceType.floatingAsteroid: 'F',
       }),
       deviceStars: parseMapDeviceTypeInt(json['deviceStars'], {
         DeviceType.reflector: 0,
@@ -311,6 +317,7 @@ class GameProgression {
         DeviceType.bomb: 0,
         DeviceType.gravityWell: 0,
         DeviceType.portal: 0,
+        DeviceType.floatingAsteroid: 0,
       }),
       deviceSubLevels: parseMapDeviceTypeInt(json['deviceSubLevels'], {
         DeviceType.reflector: 1,
@@ -318,6 +325,7 @@ class GameProgression {
         DeviceType.bomb: 1,
         DeviceType.gravityWell: 1,
         DeviceType.portal: 1,
+        DeviceType.floatingAsteroid: 1,
       }),
       dailyHardGalaxyId: json['dailyHardGalaxyId'] as String?,
       dailyHardCompleted: json['dailyHardCompleted'] as bool?,
@@ -332,14 +340,15 @@ class GameProgression {
     if (dailyHardDateStr != today || dailyHardGalaxyId == null || dailyHardQuestId == null) {
       dailyHardCompleted = false;
       dailyHardDateStr = today;
-      if (unlockedGalaxyIds.isNotEmpty) {
-        final list = List<String>.from(unlockedGalaxyIds);
-        list.shuffle(Random());
-        dailyHardGalaxyId = list.first;
+      final eligible = unlockedGalaxyIds.where((id) => id != 'galaxy_1').toList();
+      if (eligible.isNotEmpty) {
+        eligible.shuffle(Random());
+        dailyHardGalaxyId = eligible.first;
+        dailyHardQuestId = "daily_hard_quest_${dailyHardGalaxyId}_$today";
       } else {
-        dailyHardGalaxyId = 'galaxy_1';
+        dailyHardGalaxyId = null;
+        dailyHardQuestId = null;
       }
-      dailyHardQuestId = "daily_hard_quest_${dailyHardGalaxyId}_$today";
       return true;
     }
     return false;
@@ -358,6 +367,8 @@ class GameProgression {
         return 300;
       case 'portal':
         return 400;
+      case 'floatingAsteroid':
+        return 500;
       default:
         return 9999;
     }
@@ -413,6 +424,8 @@ class GameProgression {
         return 80;
       case DeviceType.portal:
         return 100;
+      case DeviceType.floatingAsteroid:
+        return 120;
     }
   }
 

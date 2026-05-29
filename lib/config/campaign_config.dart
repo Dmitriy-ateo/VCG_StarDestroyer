@@ -316,6 +316,265 @@ const String campaignJsonConfig = r'''
         }
       }
     ]
+  },
+  {
+    "id": "galaxy_4",
+    "name": "Void Terminus",
+    "description": "The absolute edge of known space, dominated by a supermassive black hole. Deploy gravity wells and singular portal connections to navigate crushing gravitational distortions.",
+    "requirementDescription": "Requires Laser Intensity Rank F ★★★+, Aiming Computer Rank F ★★+, and Researched Gravity Wells.",
+    "minLaserIntensityRank": "F",
+    "minLaserIntensityStars": 3,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 2,
+    "requiredUnlockedBlueprints": ["gravityWell"],
+    "prerequisiteGalaxyIds": ["galaxy_3"],
+    "quests": [
+      {
+        "id": "q7",
+        "title": "The Singularity Bypass",
+        "description": "Deliver a curved laser strike across folding spacetime using pre-installed portal loops and localized gravity wells to hit hidden rebel hideouts.",
+        "type": "lore",
+        "storyLoreSnippet": "Admiral, the remnants of the rebel armada have fled to the event horizon of the Void Terminus. They have anchored behind massive singularity shields that block all straight paths. You must bend the superlaser around the black hole core using a gravity well at (2, 8) to steer the laser into Portal A at (1, 5). The laser exits Portal B at (6, 2) going up to vaporize the command center!",
+        "creditsReward": 600,
+        "rpReward": 120,
+        "isCompleted": false,
+        "levelData": {
+          "id": 16,
+          "name": "The Singularity Bypass",
+          "description": "Space-time folding. Place a Gravity Well near (2, 8) to bend the laser left into Portal A at (1, 5). The laser exits Portal B at (6, 2) going up to strike the void terminal planet at (6, 1).",
+          "deathStarX": 2,
+          "deathStarY": 11,
+          "deathStarInitialAngle": -90.0,
+          "planets": [
+            {
+              "id": "p1",
+              "gridX": 6,
+              "gridY": 1,
+              "radius": 20.0,
+              "name": "Void Command Center",
+              "color": "0xFFE040FB"
+            }
+          ],
+          "walls": [
+            { "gridX": 2, "gridY": 3, "isDestructible": false, "type": "energyShield", "requiredLaserPower": 2 },
+            { "gridX": 5, "gridY": 4, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 5, "gridY": 5, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 5, "gridY": 6, "isDestructible": false, "type": "asteroid" }
+          ],
+          "availableInventory": [
+            { "id": "t_well1", "type": "gravityWell" }
+          ],
+          "presetDevices": [
+            { "id": "q7_port1", "type": "portal", "gridX": 1, "gridY": 5, "portalPairId": "q7_port2", "isPlaced": true },
+            { "id": "q7_port2", "type": "portal", "gridX": 6, "gridY": 2, "portalPairId": "q7_port1", "isPlaced": true }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "galaxy_5",
+    "name": "Obsidian Core",
+    "description": "Unstable spatial anomaly surrounded by dark-matter crystalline asteroid fields. Chain explosive reactions are necessary to shatter core security gates.",
+    "requirementDescription": "Requires Laser Intensity Rank F ★★★★+, Aiming Computer Rank F ★★★+, and Researched Bombs.",
+    "minLaserIntensityRank": "F",
+    "minLaserIntensityStars": 4,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 3,
+    "requiredUnlockedBlueprints": ["bomb"],
+    "prerequisiteGalaxyIds": ["galaxy_4"],
+    "quests": [
+      {
+        "id": "q8",
+        "title": "The Obsidian Detonation",
+        "description": "Trigger double bomb detonation vectors to bypass the central crystal column shields.",
+        "type": "lore",
+        "storyLoreSnippet": "Admiral, the final Imperial black-ops shipyard is located deep inside the Obsidian Core. Massive crystal columns block all entry vectors. You must place a splitter at (3, 6) to bifurcate the beam, detonating twin bombs at (1, 6) and (5, 6) to vaporize both shield centers simultaneously!",
+        "creditsReward": 700,
+        "rpReward": 140,
+        "isCompleted": false,
+        "levelData": {
+          "id": 17,
+          "name": "The Obsidian Detonation",
+          "description": "Crystalline annihilation. Place a 180° Splitter at (3, 6) to bifurcate the laser left and right, detonating bombs at (1, 6) and (5, 6) to destroy the shielded outposts at (1, 4) and (5, 4).",
+          "deathStarX": 3,
+          "deathStarY": 11,
+          "deathStarInitialAngle": -90.0,
+          "planets": [
+            {
+              "id": "p1",
+              "gridX": 1,
+              "gridY": 4,
+              "radius": 20.0,
+              "name": "Obsidian Outpost Alpha",
+              "color": "0xFF00FFF5"
+            },
+            {
+              "id": "p2",
+              "gridX": 5,
+              "gridY": 4,
+              "radius": 20.0,
+              "name": "Obsidian Outpost Beta",
+              "color": "0xFFFFE57F"
+            }
+          ],
+          "walls": [
+            { "gridX": 3, "gridY": 3, "isDestructible": false, "type": "energyShield", "requiredLaserPower": 2 },
+            { "gridX": 2, "gridY": 4, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 4, "gridY": 4, "isDestructible": false, "type": "asteroid" }
+          ],
+          "availableInventory": [
+            { "id": "t_split1", "type": "splitter", "splitAngleDegrees": 180.0 },
+            { "id": "t_bomb1", "type": "bomb" },
+            { "id": "t_bomb2", "type": "bomb" }
+          ],
+          "presetDevices": []
+        }
+      }
+    ]
+  },
+  {
+    "id": "galaxy_6",
+    "name": "Chronos Rift",
+    "description": "The final stronghold of Grand Moff Vance. Folding spatial dimensions and gravity fields converge. Integrate every device in your arsenal to shatter the central nexus.",
+    "requirementDescription": "Requires Laser Intensity Rank E+, Aiming Computer Rank F ★★★★+, and Researched Splitters.",
+    "minLaserIntensityRank": "E",
+    "minLaserIntensityStars": 0,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 4,
+    "requiredUnlockedBlueprints": ["splitter"],
+    "prerequisiteGalaxyIds": ["galaxy_5"],
+    "quests": [
+      {
+        "id": "q9",
+        "title": "The Chronos Convergence",
+        "description": "Coordinate a master tactical layout using portals, splitters, and mirrors to strike the twin chronos cores simultaneously.",
+        "type": "lore",
+        "storyLoreSnippet": "This is it, Captain. Grand Moff Vance's central operations tower sits inside the Chronos Rift. All access corridors are heavily fortified. You must deploy your entire tactical inventory: splitters, gravity wells, portals, and reflectors, to guide multiple beams across the folds and destroy the final terminal.",
+        "creditsReward": 1000,
+        "rpReward": 200,
+        "isCompleted": false,
+        "levelData": {
+          "id": 18,
+          "name": "The Chronos Convergence",
+          "description": "The ultimate test. Use all components to guide the laser across spatial folds into the command core.",
+          "deathStarX": 3,
+          "deathStarY": 11,
+          "deathStarInitialAngle": -90.0,
+          "planets": [
+            {
+              "id": "p1",
+              "gridX": 2,
+              "gridY": 2,
+              "radius": 20.0,
+              "name": "Chronos Station Alpha",
+              "color": "0xFF00FFF5"
+            },
+            {
+              "id": "p2",
+              "gridX": 5,
+              "gridY": 2,
+              "radius": 20.0,
+              "name": "Chronos Station Beta",
+              "color": "0xFFFFE57F"
+            }
+          ],
+          "walls": [
+            { "gridX": 3, "gridY": 5, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 4, "gridY": 5, "isDestructible": false, "type": "asteroid" }
+          ],
+          "availableInventory": [
+            { "id": "t_split1", "type": "splitter", "splitAngleDegrees": 90.0 },
+            { "id": "t_ref1", "type": "reflector" },
+            { "id": "t_ref2", "type": "reflector" }
+          ],
+          "presetDevices": [
+            { "id": "c_port1", "type": "portal", "gridX": 6, "gridY": 9, "portalPairId": "c_port2", "isPlaced": true },
+            { "id": "c_port2", "type": "portal", "gridX": 1, "gridY": 5, "portalPairId": "c_port1", "isPlaced": true }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "galaxy_7",
+    "name": "Asteroid Frontier",
+    "description": "Outer-rim asteroid belt where drifting high-density rocks float. Calibrate the laser and place breakable floating deflection asteroids to thread the S-bend lanes.",
+    "requirementDescription": "Requires Laser Intensity Rank F ★★+.",
+    "minLaserIntensityRank": "F",
+    "minLaserIntensityStars": 2,
+    "minAimingComputerRank": "F",
+    "minAimingComputerStars": 0,
+    "requiredUnlockedBlueprints": [],
+    "prerequisiteGalaxyIds": ["galaxy_6"],
+    "quests": [
+      {
+        "id": "q19",
+        "title": "Drifting Vectors",
+        "description": "First contact with drifting space rocks. Deploy floating asteroids to deviate the superlaser around the armored shield cores.",
+        "type": "lore",
+        "storyLoreSnippet": "The rebel outpost sits in a dense pocket of the outer rim. Core asteroid blockades block direct fire. Place Floating Asteroids in the path to refract and deviate the laser around the shields!",
+        "creditsReward": 1200,
+        "rpReward": 250,
+        "isCompleted": false,
+        "levelData": {
+          "id": 19,
+          "name": "Drifting Vectors",
+          "description": "Refraction gauntlet! Place a Floating Asteroid at (3, 7) at 30° to deflect the laser beam diagonally up and right, and place another Floating Asteroid at (5, 4) at -30° to deflect it back to strike the target at (5, 2)!",
+          "deathStarX": 3,
+          "deathStarY": 11,
+          "deathStarInitialAngle": -90.0,
+          "planets": [
+            {
+              "id": "p1",
+              "gridX": 5,
+              "gridY": 2,
+              "radius": 20.0,
+              "name": "Frontier Relay Alpha",
+              "color": "0xFF00FFF5"
+            }
+          ],
+          "walls": [
+            { "gridX": 3, "gridY": 5, "isDestructible": false, "type": "asteroid" },
+            { "gridX": 4, "gridY": 5, "isDestructible": false, "type": "asteroid" }
+          ],
+          "availableInventory": [
+            { "id": "fa_ast1", "type": "floatingAsteroid", "angleDegrees": 30.0 },
+            { "id": "fa_ast2", "type": "floatingAsteroid", "angleDegrees": -30.0 }
+          ]
+        }
+      },
+      {
+        "id": "q20",
+        "title": "The Shatter Gauntlet",
+        "description": "A heavy rebel bastion is fortified behind double obsidian gates. Deploy splitter prisms and breakable floating asteroids to detonate both command towers.",
+        "type": "side",
+        "storyLoreSnippet": "Captain, two rebel command targets are executing escape sequences. Use splitters to separate the beam and deflect them symmetrically using organic space rock refractors to strike both command posts simultaneously!",
+        "creditsReward": 1500,
+        "rpReward": 300,
+        "isCompleted": false,
+        "levelData": {
+          "id": 20,
+          "name": "The Shatter Gauntlet",
+          "description": "Prism & Rock. Place a 180° splitter at (3, 8) at 0° to split Left and Right. Place Floating Asteroids at (1, 8) at 45° to deflect up to (1, 2) and at (5, 8) at 45° to deflect up to (5, 2)!",
+          "deathStarX": 3,
+          "deathStarY": 11,
+          "deathStarInitialAngle": -90.0,
+          "planets": [
+            { "id": "p1", "gridX": 1, "gridY": 2, "radius": 20.0, "name": "Convoy Alpha", "color": "0xFFFF2E93" },
+            { "id": "p2", "gridX": 5, "gridY": 2, "radius": 20.0, "name": "Convoy Beta", "color": "0xFFFFB703" }
+          ],
+          "walls": [
+            { "gridX": 3, "gridY": 5, "isDestructible": false, "type": "asteroid" }
+          ],
+          "availableInventory": [
+            { "id": "fa_split1", "type": "splitter", "splitAngleDegrees": 180.0 },
+            { "id": "fa_ast1", "type": "floatingAsteroid", "angleDegrees": 45.0 },
+            { "id": "fa_ast2", "type": "floatingAsteroid", "angleDegrees": 45.0 }
+          ]
+        }
+      }
+    ]
   }
 ]
 ''';

@@ -4,8 +4,12 @@ import 'package:flutter/services.dart';
 import '../models/device_model.dart';
 import '../models/level_data.dart';
 import '../models/game_progression.dart';
+import '../models/galaxy_model.dart';
+import '../config/lore_dialogue.dart';
 import '../game/game_controller.dart';
 import '../widgets/board_painter.dart';
+import '../widgets/dialogue_overlay.dart';
+import '../services/audio_service.dart';
 
 class GameBoardScreen extends StatefulWidget {
   final GameController controller;
@@ -33,6 +37,16 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   String? _activeTooltipText;
   Offset? _tooltipPosition;
 
+  // Holographic Radial HUD State
+  DeviceModel? _selectedHudDevice;
+  late AnimationController _hudAnimationController;
+
+  // Cyberpunk Dialogue System State
+  bool _isDialogueOverlayVisible = false;
+  bool _hasShownPostMissionDialogue = false;
+  List<DialogueNode>? _dialogueSequence;
+  VoidCallback? _onDialogueComplete;
+
   @override
   void initState() {
     super.initState();
@@ -45,12 +59,36 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
+
+    _hudAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+
+    // Initialize pre-mission lore dialogues if applicable
+    final quest = widget.controller.activeQuest;
+    if (quest != null && quest.type == QuestType.lore && !widget.controller.preMissionDialogueShown) {
+      final seq = LoreDialogueConfig.preMissionDialogues[quest.id];
+      if (seq != null) {
+        _isDialogueOverlayVisible = true;
+        _dialogueSequence = seq;
+        _onDialogueComplete = () {
+          widget.controller.preMissionDialogueShown = true;
+          setState(() {
+            _isDialogueOverlayVisible = false;
+            _dialogueSequence = null;
+            _onDialogueComplete = null;
+          });
+        };
+      }
+    }
   }
 
   @override
   void dispose() {
     _bgAnimationController.dispose();
     _aimAnimationController.dispose();
+    _hudAnimationController.dispose();
     super.dispose();
   }
 
@@ -187,6 +225,8 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
         return "🕳️ [Gravity Well - Level $level]\nAttraction Range: $range units. Pull Strength: $pull.\nContinuously curves the laser beam path.";
       case DeviceType.bomb:
         return "💣 [Tactical Bomb - Level $level]\nExplosion radius: 2.2 units.\nDetonates on hit. Can destroy shielded planets up to Defense Level $level.";
+      case DeviceType.floatingAsteroid:
+        return "☄️ [Floating Asteroid - Level $level]\nBeatable! Shatters on hit, deflecting the laser by exactly its rotation angle (${dev.angleDegrees.toStringAsFixed(0)}°).";
     }
   }
 
@@ -244,6 +284,15 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                 if (state == PlayState.victory || state == PlayState.defeat)
                   Positioned.fill(
                     child: _buildOverlayDialog(state),
+                  ),
+
+                // 8. Cyberpunk Dialogue Overlay (Pre-mission / Lore Dialogue)
+                if (_isDialogueOverlayVisible && _dialogueSequence != null && _onDialogueComplete != null)
+                  Positioned.fill(
+                    child: DialogueOverlay(
+                      dialogueSequence: _dialogueSequence!,
+                      onComplete: _onDialogueComplete!,
+                    ),
                   ),
               ],
             ),
@@ -529,6 +578,15 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
               _hideTooltip();
               if (widget.controller.playState != PlayState.editing) return;
               
+              if (_selectedHudDevice != null) {
+                setState(() {
+                  _selectedHudDevice = null;
+                });
+                _hudAnimationController.reverse();
+                HapticFeedback.lightImpact();
+                return;
+              }
+
               final x = ((details.localPosition.dx - offsetX) / cellW).floor();
               final y = ((details.localPosition.dy - offsetY) / cellH).floor();
 
@@ -554,9 +612,9 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                 }
               }
             },
-            onDoubleTapDown: (details) {
-              _hideTooltip();
+            onLongPressStart: (details) {
               if (widget.controller.playState != PlayState.editing) return;
+              _hideTooltip();
 
               final x = ((details.localPosition.dx - offsetX) / cellW).floor();
               final y = ((details.localPosition.dy - offsetY) / cellH).floor();
@@ -568,15 +626,16 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                   break;
                 }
               }
+
               if (clickedDevice != null) {
-                widget.controller.removeDevice(clickedDevice);
+                setState(() {
+                  _selectedHudDevice = clickedDevice;
+                });
+                _hudAnimationController.forward(from: 0.0);
                 HapticFeedback.mediumImpact();
+              } else {
+                _showTooltipAt(x, y, details.localPosition);
               }
-            },
-            onLongPressStart: (details) {
-              final x = ((details.localPosition.dx - offsetX) / cellW).floor();
-              final y = ((details.localPosition.dy - offsetY) / cellH).floor();
-              _showTooltipAt(x, y, details.localPosition);
             },
             onLongPressEnd: (details) {
               _hideTooltip();
@@ -675,6 +734,18 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                         ),
                       ),
                     ),
+                  ),
+
+                // 4. Holographic Radial HUD Popup (for device rotation/removal)
+                if (_selectedHudDevice != null)
+                  _buildHolographicRadialHud(
+                    _selectedHudDevice!,
+                    offsetX + (_selectedHudDevice!.gridX + 0.5) * cellW,
+                    offsetY + (_selectedHudDevice!.gridY + 0.5) * cellH,
+                    cellW,
+                    cellH,
+                    sizeW,
+                    sizeH,
                   ),
               ],
             ),
@@ -967,6 +1038,8 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
         return const Icon(Icons.brightness_low, color: Color(0xFFFF3333), size: 28);
       case DeviceType.portal:
         return const Icon(Icons.circle_outlined, color: Color(0xFFFF9F1C), size: 28);
+      case DeviceType.floatingAsteroid:
+        return const Icon(Icons.grain, color: Color(0xFFFFB703), size: 28);
     }
   }
 
@@ -1054,6 +1127,22 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
 
   Widget _buildOverlayDialog(PlayState state) {
     final isWin = state == PlayState.victory;
+    final quest = widget.controller.activeQuest;
+
+    // Intercept victory to show post-mission lore dialogue first
+    if (isWin && quest != null && quest.type == QuestType.lore && !_hasShownPostMissionDialogue) {
+      final postSeq = LoreDialogueConfig.postMissionDialogues[quest.id];
+      if (postSeq != null) {
+        return DialogueOverlay(
+          dialogueSequence: postSeq,
+          onComplete: () {
+            setState(() {
+              _hasShownPostMissionDialogue = true;
+            });
+          },
+        );
+      }
+    }
 
     return Container(
       color: Colors.black.withOpacity(0.85),
@@ -1126,8 +1215,10 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                 const SizedBox(height: 28),
               ],
               
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
                 children: [
                   OutlinedButton(
                     onPressed: widget.controller.resetLaser,
@@ -1183,5 +1274,275 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
         ),
       ],
     );
+  }
+
+  Widget _buildHolographicRadialHud(
+    DeviceModel device,
+    double centerX,
+    double centerY,
+    double cellW,
+    double cellH,
+    double sizeW,
+    double sizeH,
+  ) {
+    final double radius = (cellW > cellH ? cellW : cellH) * 0.65;
+    final bool isTopDevice = device.gridY < 2;
+    final double direction = isTopDevice ? 1.0 : -1.0;
+    
+    // Center-y coordinate of the capsule
+    final double hudCenterY = centerY + direction * 75;
+    
+    final double capsuleW = 210.0;
+    final double capsuleH = 44.0;
+    
+    final double leftPos = (centerX - capsuleW / 2).clamp(16.0, sizeW - capsuleW - 16.0);
+    final double topPos = hudCenterY - capsuleH / 2;
+
+    return AnimatedBuilder(
+      animation: _hudAnimationController,
+      builder: (context, child) {
+        final val = _hudAnimationController.value;
+        if (val <= 0.0) return const SizedBox.shrink();
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // 1. Target Custom Painter for Ring and Leader Line
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: HudConnectorPainter(
+                    centerX: centerX,
+                    centerY: centerY,
+                    radius: radius,
+                    direction: direction,
+                    progress: val,
+                  ),
+                ),
+              ),
+            ),
+            
+            // 2. Interactive Floating Control Capsule
+            Positioned(
+              left: leftPos,
+              top: topPos,
+              child: Transform.scale(
+                scale: 0.85 + 0.15 * val,
+                alignment: Alignment.center,
+                child: Opacity(
+                  opacity: val,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        width: capsuleW,
+                        height: capsuleH,
+                        decoration: BoxDecoration(
+                          color: const Color(0xE60F1115),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: const Color(0xFF00FFF5).withOpacity(0.85),
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00FFF5).withOpacity(0.25 * val),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            )
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            // Rotate Button
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    widget.controller.rotateDevice(device);
+                                    HapticFeedback.lightImpact();
+                                    AudioService.instance.playSfx('audio/hud_click.mp3');
+                                  },
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.sync,
+                                        color: Color(0xFF00FFF5),
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "ROTATE",
+                                        style: TextStyle(
+                                          color: Color(0xFF00FFF5),
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5,
+                                          fontFamily: 'Outfit',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Vertical Divider
+                            Container(
+                              width: 1.2,
+                              height: 24,
+                              color: const Color(0xFF00FFF5).withOpacity(0.3),
+                            ),
+                            
+                            // Reclaim Button
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    widget.controller.removeDevice(device);
+                                    HapticFeedback.heavyImpact();
+                                    AudioService.instance.playSfx('audio/hud_click.mp3');
+                                    setState(() {
+                                      _selectedHudDevice = null;
+                                    });
+                                    _hudAnimationController.reverse();
+                                  },
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        color: Color(0xFFFF2E93),
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "RECLAIM",
+                                        style: TextStyle(
+                                          color: Color(0xFFFF2E93),
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5,
+                                          fontFamily: 'Outfit',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class HudConnectorPainter extends CustomPainter {
+  final double centerX;
+  final double centerY;
+  final double radius;
+  final double direction; // -1.0 for up, 1.0 for down
+  final double progress; // _hudAnimationController.value
+
+  HudConnectorPainter({
+    required this.centerX,
+    required this.centerY,
+    required this.radius,
+    required this.direction,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0.0) return;
+
+    final paint = Paint()
+      ..color = const Color(0xFF00FFF5).withOpacity(0.8 * progress)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    // 1. Draw glowing selector circle with corner crosshairs
+    canvas.drawCircle(Offset(centerX, centerY), radius * progress, paint);
+
+    // Bounding corners (cybernetic lock brackets)
+    final bracketLen = 8.0;
+    final halfCell = radius * 0.9;
+    final bracketsPath = Path();
+    // Top Left
+    bracketsPath.moveTo(centerX - halfCell, centerY - halfCell + bracketLen);
+    bracketsPath.lineTo(centerX - halfCell, centerY - halfCell);
+    bracketsPath.lineTo(centerX - halfCell + bracketLen, centerY - halfCell);
+    // Top Right
+    bracketsPath.moveTo(centerX + halfCell - bracketLen, centerY - halfCell);
+    bracketsPath.lineTo(centerX + halfCell, centerY - halfCell);
+    bracketsPath.lineTo(centerX + halfCell, centerY - halfCell + bracketLen);
+    // Bottom Left
+    bracketsPath.moveTo(centerX - halfCell, centerY + halfCell - bracketLen);
+    bracketsPath.lineTo(centerX - halfCell, centerY + halfCell);
+    bracketsPath.lineTo(centerX - halfCell + bracketLen, centerY + halfCell);
+    // Bottom Right
+    bracketsPath.moveTo(centerX + halfCell - bracketLen, centerY + halfCell);
+    bracketsPath.lineTo(centerX + halfCell, centerY + halfCell);
+    bracketsPath.lineTo(centerX + halfCell, centerY + halfCell - bracketLen);
+
+    canvas.drawPath(bracketsPath, paint);
+
+    // 2. Draw vertical dotted leader line pointing to capsule
+    final lineStart = Offset(centerX, centerY + direction * radius);
+    final lineEnd = Offset(centerX, centerY + direction * 55 * progress);
+
+    final linePaint = Paint()
+      ..color = const Color(0xFF00FFF5).withOpacity(0.5 * progress)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+
+    // Draw dashed/dotted connector line
+    double curY = lineStart.dy;
+    final step = 4.0;
+    final dash = 4.0;
+    final targetY = lineEnd.dy;
+
+    if (direction < 0) {
+      // going up
+      while (curY > targetY) {
+        final nextY = (curY - dash).clamp(targetY, lineStart.dy);
+        canvas.drawLine(Offset(centerX, curY), Offset(centerX, nextY), linePaint);
+        curY -= (dash + step);
+      }
+    } else {
+      // going down
+      while (curY < targetY) {
+        final nextY = (curY + dash).clamp(lineStart.dy, targetY);
+        canvas.drawLine(Offset(centerX, curY), Offset(centerX, nextY), linePaint);
+        curY += (dash + step);
+      }
+    }
+
+    // Draw a small neon scanning dot at the tip of the line
+    final dotPaint = Paint()
+      ..color = const Color(0xFFFF2E93).withOpacity(0.9 * progress)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(lineEnd, 3.0, dotPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant HudConnectorPainter oldDelegate) {
+    return oldDelegate.centerX != centerX ||
+        oldDelegate.centerY != centerY ||
+        oldDelegate.direction != direction ||
+        oldDelegate.progress != progress;
   }
 }

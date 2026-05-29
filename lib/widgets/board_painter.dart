@@ -1464,6 +1464,134 @@ class BoardPainter extends CustomPainter {
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, scale * 0.02);
         canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: itemRadius * 1.7, height: scale * 0.20), ringPaint);
         break;
+
+      case DeviceType.floatingAsteroid:
+        // Organic irregular floating asteroid shape
+        // Using a stable seed based on the device ID
+        final seed = dev.id.hashCode;
+        final rand = Random(seed);
+        final numPoints = 6 + rand.nextInt(3); // 6 to 8 points for irregular organic shape
+        
+        final points = <Offset>[];
+        for (int i = 0; i < numPoints; i++) {
+          final angle = i * 2 * pi / numPoints + (rand.nextDouble() - 0.5) * 0.25;
+          final r = 0.28 + rand.nextDouble() * 0.09; // scaled down to item size
+          points.add(Offset(cos(angle) * scale * r, sin(angle) * scale * r));
+        }
+
+        final centerOffset = Offset(
+          (rand.nextDouble() - 0.5) * scale * 0.08,
+          (rand.nextDouble() - 0.5) * scale * 0.08,
+        );
+
+        // Volcanic base colors
+        final Color darkObsidian = const Color(0xFF0F0E13);
+        final Color lightObsidian = const Color(0xFF221F2B);
+
+        // Draw facets
+        for (int i = 0; i < numPoints; i++) {
+          final pA = points[i];
+          final pB = points[(i + 1) % numPoints];
+
+          final mid = Offset((pA.dx + pB.dx) / 2, (pA.dy + pB.dy) / 2);
+          final toMidX = mid.dx - centerOffset.dx;
+          final toMidY = mid.dy - centerOffset.dy;
+          
+          final len = sqrt(toMidX * toMidX + toMidY * toMidY);
+          double dot = 0.0;
+          if (len > 0.0) {
+            dot = (-0.7 * (toMidX / len) + -0.7 * (toMidY / len));
+          }
+          final tLight = ((dot + 1.0) / 2.0).clamp(0.0, 1.0);
+          final facetColor = Color.lerp(darkObsidian, lightObsidian, tLight)!;
+
+          final facetPath = Path()
+            ..moveTo(centerOffset.dx, centerOffset.dy)
+            ..lineTo(pA.dx, pA.dy)
+            ..lineTo(pB.dx, pB.dy)
+            ..close();
+
+          final facetPaint = Paint()
+            ..color = facetColor
+            ..style = PaintingStyle.fill;
+          canvas.drawPath(facetPath, facetPaint);
+
+          final facetBorderPaint = Paint()
+            ..color = const Color(0xFF2E2A3A).withOpacity(0.35)
+            ..strokeWidth = 0.6
+            ..style = PaintingStyle.stroke;
+          canvas.drawPath(facetPath, facetBorderPaint);
+        }
+
+        // Draw pulsing orange/cyan cyber lava veins on the asteroid
+        final pulseValue = 0.5 + 0.5 * sin(bgAnimationValue * 2 * pi * 1.5 + seed);
+        
+        final lavaColor = const Color(0xFFFF5252);
+        final lavaGlow = const Color(0xFFFFAB40);
+        
+        final lavaPaint = Paint()
+          ..color = lavaColor.withOpacity(pulseValue)
+          ..strokeWidth = 1.0
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
+
+        final lavaGlowPaint = Paint()
+          ..color = lavaGlow.withOpacity(pulseValue * 0.4)
+          ..strokeWidth = 2.0
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
+
+        for (int f = 0; f < 3; f++) {
+          final targetIdx = (f * (numPoints ~/ 3)) % numPoints;
+          final pTarget = points[targetIdx];
+          final midPoint = Offset(
+            (centerOffset.dx + pTarget.dx) * 0.5 + (rand.nextDouble() - 0.5) * scale * 0.05,
+            (centerOffset.dy + pTarget.dy) * 0.5 + (rand.nextDouble() - 0.5) * scale * 0.05,
+          );
+          canvas.drawLine(centerOffset, midPoint, lavaGlowPaint);
+          canvas.drawLine(midPoint, pTarget * 0.7, lavaGlowPaint);
+          canvas.drawLine(centerOffset, midPoint, lavaPaint);
+          canvas.drawLine(midPoint, pTarget * 0.7, lavaPaint);
+        }
+
+        // Draw outer outline
+        final outerPath = Path();
+        outerPath.moveTo(points[0].dx, points[0].dy);
+        for (int i = 1; i < numPoints; i++) {
+          outerPath.lineTo(points[i].dx, points[i].dy);
+        }
+        outerPath.close();
+
+        final outerFramePaint = Paint()
+          ..color = const Color(0xFF3F3B4C)
+          ..strokeWidth = 1.0
+          ..style = PaintingStyle.stroke;
+        canvas.drawPath(outerPath, outerFramePaint);
+
+        // Draw a glowing neon-cyan deflection pointer arrow showing its active redirection path
+        final pointerColor = const Color(0xFF00FFF5);
+        final pointerPaint = Paint()
+          ..color = pointerColor.withOpacity(0.4 + 0.45 * pulseValue)
+          ..style = PaintingStyle.fill
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, scale * 0.015);
+
+        // Small indicator triangle pointing forward along the local X-axis
+        final double arrowX = itemRadius * 1.0;
+        final double arrowSize = scale * 0.07;
+        final pointerPath = Path()
+          ..moveTo(arrowX + arrowSize * 1.2, 0)
+          ..lineTo(arrowX - arrowSize * 0.8, -arrowSize * 0.8)
+          ..lineTo(arrowX - arrowSize * 0.4, 0)
+          ..lineTo(arrowX - arrowSize * 0.8, arrowSize * 0.8)
+          ..close();
+        canvas.drawPath(pointerPath, pointerPaint);
+
+        final pointerOutline = Paint()
+          ..color = Colors.white.withOpacity(0.8)
+          ..strokeWidth = 0.8
+          ..style = PaintingStyle.stroke;
+        canvas.drawPath(pointerPath, pointerOutline);
+        break;
     }
 
     canvas.restore();

@@ -11,9 +11,13 @@ import 'screens/galaxies_map_screen.dart';
 import 'screens/galaxy_board_screen.dart';
 import 'screens/command_bridge_screen.dart';
 import 'theme/style_guide.dart';
+import 'services/audio_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Persistent Audio Service
+  await AudioService.instance.initialize();
   
   // Set preferred orientations to portrait for mobile phone gameplay
   SystemChrome.setPreferredOrientations([

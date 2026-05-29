@@ -25,6 +25,7 @@ class SectorGenerator {
   ];
 
   static LevelData generateDailySector(GameProgression progression, String galaxyId) {
+    final galaxyNum = int.tryParse(galaxyId.replaceAll('galaxy_', '')) ?? 1;
     // Collect all unlocked device types
     final unlockedTypes = progression.unlockedDevices;
 
@@ -41,20 +42,20 @@ class SectorGenerator {
     final LevelData level;
     switch (chosenTemplate) {
       case 'splitter':
-        level = _generateSplitterTemplate(progression, galaxyId);
+        level = _generateSplitterTemplate(progression, galaxyId, galaxyNum);
         break;
       case 'bomb':
-        level = _generateBombTemplate(progression, galaxyId);
+        level = _generateBombTemplate(progression, galaxyId, galaxyNum);
         break;
       case 'portal':
-        level = _generatePortalTemplate(progression, galaxyId);
+        level = _generatePortalTemplate(progression, galaxyId, galaxyNum);
         break;
       case 'gravity':
-        level = _generateGravityTemplate(progression, galaxyId);
+        level = _generateGravityTemplate(progression, galaxyId, galaxyNum);
         break;
       case 'reflector':
       default:
-        level = _generateReflectorTemplate(progression, galaxyId);
+        level = _generateReflectorTemplate(progression, galaxyId, galaxyNum);
         break;
     }
 
@@ -73,7 +74,7 @@ class SectorGenerator {
   }
 
   // Template 1: Reflector redirection (2 mirrors required)
-  static LevelData _generateReflectorTemplate(GameProgression progression, String galaxyId) {
+  static LevelData _generateReflectorTemplate(GameProgression progression, String galaxyId, int galaxyNum) {
     // Death Star fixed at bottom center
     const dsX = 3;
     const dsY = 11;
@@ -97,8 +98,37 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       )
     ];
+
+    if (galaxyNum >= 3) {
+      planets.add(
+        PlanetTarget(
+          id: "daily_p2",
+          gridX: (x2 + (goRight ? -1 : 1)).clamp(0, 7),
+          gridY: (y2 + 1).clamp(0, 11),
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+      );
+    }
+
+    if (galaxyNum >= 5) {
+      planets.add(
+        PlanetTarget(
+          id: "daily_p3",
+          gridX: (3 - (goRight ? -1 : 1)).clamp(0, 7),
+          gridY: y2,
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+      );
+    }
 
     // Emitters and mirrors block standard straight lines
     final List<WallBlock> walls = [
@@ -107,10 +137,6 @@ class SectorGenerator {
     ];
 
     // Add extra random clutter walls that don't block our solution path
-    // Solution path cells are:
-    // (3, 11) up to (3, y1)
-    // (3, y1) horizontally to (x2, y1)
-    // (x2, y1) up to (x2, y2)
     final Set<String> solutionCells = {};
     for (int y = y1; y <= dsY; y++) {
       solutionCells.add("3,$y");
@@ -124,19 +150,30 @@ class SectorGenerator {
       solutionCells.add("$x2,$y");
     }
 
-    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
-    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+    for (var p in planets) {
+      solutionCells.add("${p.gridX},${p.gridY}");
+      solutionCells.add("${p.gridX},${p.gridY + 1}");
+    }
 
-    // Available inventory: 2 reflectors
+    // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
+    _addClutterWalls(walls, solutionCells, galaxyNum, dsX, dsY);
+
+    // Available inventory scales with difficulty
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
       DeviceModel(id: "daily_ref2", type: DeviceType.reflector),
     ];
+    if (galaxyNum >= 3) {
+      availableInventory.add(DeviceModel(id: "daily_ref3", type: DeviceType.reflector));
+    }
+    if (galaxyNum >= 5) {
+      availableInventory.add(DeviceModel(id: "daily_ref4", type: DeviceType.reflector));
+    }
 
     return LevelData(
       id: 999,
       name: "Calibrated Bends",
-      description: "Atmospheric dust blocks direct fire. Place reflectors at ($dsX, $y1) and ($x2, $y1) to reflect the laser around the barriers.",
+      description: "Atmospheric dust blocks direct fire. Place reflectors to redirect the beam and cleanse targets.",
       deathStarX: dsX,
       deathStarY: dsY,
       deathStarInitialAngle: -90.0, // Aim straight up
@@ -150,7 +187,7 @@ class SectorGenerator {
   }
 
   // Template 2: Splitter opposite orbits (1 splitter + 2 reflectors required)
-  static LevelData _generateSplitterTemplate(GameProgression progression, String galaxyId) {
+  static LevelData _generateSplitterTemplate(GameProgression progression, String galaxyId, int galaxyNum) {
     const dsX = 3;
     const dsY = 11;
 
@@ -168,6 +205,7 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       ),
       PlanetTarget(
         id: "daily_sp_p2",
@@ -176,8 +214,23 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       ),
     ];
+
+    if (galaxyNum >= 4) {
+      planets.add(
+        PlanetTarget(
+          id: "daily_sp_p3",
+          gridX: 3,
+          gridY: 2,
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+      );
+    }
 
     // Walls block direct lines
     final List<WallBlock> walls = [
@@ -198,21 +251,30 @@ class SectorGenerator {
       solutionCells.add("1,$y");
       solutionCells.add("6,$y");
     }
+    for (var p in planets) {
+      solutionCells.add("${p.gridX},${p.gridY}");
+    }
 
     // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
-    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+    _addClutterWalls(walls, solutionCells, galaxyNum, dsX, dsY);
 
-    // Available Inventory: 1 splitter (180 deg) and 2 reflectors
+    // Available Inventory: 1 splitter (180 deg) and mirrors scaling with difficulty
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_split1", type: DeviceType.splitter, splitAngleDegrees: 180.0),
       DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
       DeviceModel(id: "daily_ref2", type: DeviceType.reflector),
     ];
+    if (galaxyNum >= 4) {
+      availableInventory.add(DeviceModel(id: "daily_ref3", type: DeviceType.reflector));
+    }
+    if (galaxyNum >= 6) {
+      availableInventory.add(DeviceModel(id: "daily_ref4", type: DeviceType.reflector));
+    }
 
     return LevelData(
       id: 999,
       name: "Dual Target Ray",
-      description: "Synchronized orbits detected. Mount a 180° SPLITTER on slot (3, $splitterY) and redirect the twin beams up with reflectors at (1, $splitterY) and (6, $splitterY).",
+      description: "Synchronized orbits detected. Split and redirect the beams to strike targets.",
       deathStarX: dsX,
       deathStarY: dsY,
       deathStarInitialAngle: -90.0,
@@ -226,7 +288,7 @@ class SectorGenerator {
   }
 
   // Template 3: Bomb chain reaction (1 bomb + 1 reflector required)
-  static LevelData _generateBombTemplate(GameProgression progression, String galaxyId) {
+  static LevelData _generateBombTemplate(GameProgression progression, String galaxyId, int galaxyNum) {
     const dsX = 2;
     const dsY = 11;
 
@@ -240,6 +302,7 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       ),
       PlanetTarget(
         id: "daily_b_p2",
@@ -248,6 +311,7 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       ),
       PlanetTarget(
         id: "daily_b_p3",
@@ -256,8 +320,32 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       ),
     ];
+
+    if (galaxyNum >= 4) {
+      planets.addAll([
+        PlanetTarget(
+          id: "daily_b_p4",
+          gridX: 1,
+          gridY: 1,
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+        PlanetTarget(
+          id: "daily_b_p5",
+          gridX: 2,
+          gridY: 1,
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+      ]);
+    }
 
     // Solid walls block the planets completely, but a gap exists at (5, 4) for the bomb
     final List<WallBlock> walls = [
@@ -266,6 +354,13 @@ class SectorGenerator {
       WallBlock(gridX: 6, gridY: 3),
       WallBlock(gridX: 2, gridY: 2), // Block direct vertical shot to other sides
     ];
+
+    if (galaxyNum >= 4) {
+      walls.addAll([
+        WallBlock(gridX: 1, gridY: 2),
+        WallBlock(gridX: 2, gridY: 2),
+      ]);
+    }
 
     // Define solution cells:
     final Set<String> solutionCells = {};
@@ -278,20 +373,31 @@ class SectorGenerator {
     solutionCells.add("4,2");
     solutionCells.add("5,2");
     solutionCells.add("6,2");
+    if (galaxyNum >= 4) {
+      solutionCells.add("1,1");
+      solutionCells.add("2,1");
+      solutionCells.add("1,4");
+    }
 
     // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
-    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+    _addClutterWalls(walls, solutionCells, galaxyNum, dsX, dsY);
 
-    // Available Inventory: 1 reflector, 1 bomb
+    // Available Inventory scales with difficulty
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
       DeviceModel(id: "daily_bomb1", type: DeviceType.bomb),
     ];
+    if (galaxyNum >= 4) {
+      availableInventory.addAll([
+        DeviceModel(id: "daily_ref2", type: DeviceType.reflector),
+        DeviceModel(id: "daily_bomb2", type: DeviceType.bomb),
+      ]);
+    }
 
     return LevelData(
       id: 999,
       name: "Chain Blast",
-      description: "Target planets are completely shielded by an armored core. Place a volatile BOMB at (5, 4) and reflect the laser into it to detonate the entire system.",
+      description: "Target planets are completely shielded by an armored core. Place a volatile BOMB and reflect the laser into it to detonate the entire system.",
       deathStarX: dsX,
       deathStarY: dsY,
       deathStarInitialAngle: -90.0,
@@ -305,7 +411,7 @@ class SectorGenerator {
   }
 
   // Template 4: Spatial Portal transit (preset portals, requires 1 reflector)
-  static LevelData _generatePortalTemplate(GameProgression progression, String galaxyId) {
+  static LevelData _generatePortalTemplate(GameProgression progression, String galaxyId, int galaxyNum) {
     const dsX = 3;
     const dsY = 11;
 
@@ -319,8 +425,23 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       )
     ];
+
+    if (galaxyNum >= 4) {
+      planets.add(
+        PlanetTarget(
+          id: "daily_pt_p2",
+          gridX: 5,
+          gridY: 1,
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+      );
+    }
 
     // Armored walls segmenting the board
     final List<WallBlock> walls = [
@@ -330,11 +451,14 @@ class SectorGenerator {
       WallBlock(gridX: 2, gridY: 2),
     ];
 
-    // Presets: Portal pair A and B
-    final List<DeviceModel> presetDevices = [
-      DeviceModel(id: "d_port1", type: DeviceType.portal, gridX: 3, gridY: 7, portalPairId: "d_port2", isPlaced: true),
-      DeviceModel(id: "d_port2", type: DeviceType.portal, gridX: 6, gridY: 5, portalPairId: "d_port1", isPlaced: true),
-    ];
+    // Preset Portals only for Galaxies 1-3
+    final List<DeviceModel> presetDevices = [];
+    if (galaxyNum < 4) {
+      presetDevices.addAll([
+        DeviceModel(id: "d_port1", type: DeviceType.portal, gridX: 3, gridY: 7, portalPairId: "d_port2", isPlaced: true),
+        DeviceModel(id: "d_port2", type: DeviceType.portal, gridX: 6, gridY: 5, portalPairId: "d_port1", isPlaced: true),
+      ]);
+    }
 
     // Define solution cells:
     final Set<String> solutionCells = {};
@@ -347,19 +471,29 @@ class SectorGenerator {
     for (int x = 1; x <= 6; x++) {
       solutionCells.add("$x,2");
     }
+    for (var p in planets) {
+      solutionCells.add("${p.gridX},${p.gridY}");
+    }
 
     // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
-    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+    _addClutterWalls(walls, solutionCells, galaxyNum, dsX, dsY);
 
-    // Available Inventory: 1 reflector
+    // Available Inventory: Reflectors and Portals scale with difficulty
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
     ];
+    if (galaxyNum >= 4) {
+      availableInventory.addAll([
+        DeviceModel(id: "daily_ref2", type: DeviceType.reflector),
+        DeviceModel(id: "daily_portal1", type: DeviceType.portal, portalPairId: "daily_portal2"),
+        DeviceModel(id: "daily_portal2", type: DeviceType.portal, portalPairId: "daily_portal1"),
+      ]);
+    }
 
     return LevelData(
       id: 999,
       name: "Folded Dimensions",
-      description: "Pre-installed Spatial Relays activated. Let the laser enter Portal A at (3, 7) to teleport to (6, 5). Use a reflector at (6, 2) to hit the target.",
+      description: "Spatial Relays activated. Guide the superlaser through dimension portals to vaporize the targets.",
       deathStarX: dsX,
       deathStarY: dsY,
       deathStarInitialAngle: -90.0,
@@ -373,7 +507,7 @@ class SectorGenerator {
   }
 
   // Template 5: Gravity Well curvature (requires 1 gravity well)
-  static LevelData _generateGravityTemplate(GameProgression progression, String galaxyId) {
+  static LevelData _generateGravityTemplate(GameProgression progression, String galaxyId, int galaxyNum) {
     const dsX = 2;
     const dsY = 11;
 
@@ -388,8 +522,23 @@ class SectorGenerator {
         radius: 20.0,
         name: _getRandomPlanetName(),
         color: Color(int.parse(_getRandomPlanetColor())),
+        requiredLaserPower: galaxyNum > 1 ? galaxyNum : null,
       )
     ];
+
+    if (galaxyNum >= 4) {
+      planets.add(
+        PlanetTarget(
+          id: "daily_g_p2",
+          gridX: 1,
+          gridY: 2,
+          radius: 20.0,
+          name: _getRandomPlanetName(),
+          color: Color(int.parse(_getRandomPlanetColor())),
+          requiredLaserPower: galaxyNum,
+        ),
+      );
+    }
 
     // Heavy blocking walls
     final List<WallBlock> walls = [
@@ -397,6 +546,13 @@ class SectorGenerator {
       WallBlock(gridX: 3, gridY: 5),
       WallBlock(gridX: 4, gridY: 5),
     ];
+
+    if (galaxyNum >= 4) {
+      walls.addAll([
+        WallBlock(gridX: 5, gridY: 5),
+        WallBlock(gridX: 1, gridY: 5),
+      ]);
+    }
 
     // Define solution cells:
     final Set<String> solutionCells = {};
@@ -407,14 +563,28 @@ class SectorGenerator {
       solutionCells.add("5,$y");
     }
     solutionCells.add("4,6");
+    if (galaxyNum >= 4) {
+      solutionCells.add("1,2");
+      solutionCells.add("1,3");
+      solutionCells.add("1,4");
+      solutionCells.add("1,6");
+      solutionCells.add("2,6");
+      solutionCells.add("3,6");
+    }
 
     // Add random clutter (breakable elements spawn dynamically from 2nd galaxy)
-    _addClutterWalls(walls, solutionCells, galaxyId, dsX, dsY);
+    _addClutterWalls(walls, solutionCells, galaxyNum, dsX, dsY);
 
-    // Available Inventory: 1 gravity well
+    // Available Inventory: 1 gravity well, plus reflectors in G4+
     final List<DeviceModel> availableInventory = [
       DeviceModel(id: "daily_well1", type: DeviceType.gravityWell),
     ];
+    if (galaxyNum >= 4) {
+      availableInventory.addAll([
+        DeviceModel(id: "daily_ref1", type: DeviceType.reflector),
+        DeviceModel(id: "daily_ref2", type: DeviceType.reflector),
+      ]);
+    }
 
     return LevelData(
       id: 999,
@@ -432,12 +602,13 @@ class SectorGenerator {
     );
   }
 
-  static void _addClutterWalls(List<WallBlock> walls, Set<String> solutionCells, String galaxyId, int dsX, int dsY) {
-    if (galaxyId == 'galaxy_1') {
+  static void _addClutterWalls(List<WallBlock> walls, Set<String> solutionCells, int galaxyNum, int dsX, int dsY) {
+    if (galaxyNum == 1) {
       // Just standard asteroid clutter in the first galaxy
       int placedClutter = 0;
       int attempts = 0;
-      while (placedClutter < 3 && attempts < 100) {
+      final targetClutter = 2 + galaxyNum;
+      while (placedClutter < targetClutter && attempts < 100) {
         attempts++;
         final wx = _random.nextInt(8);
         final wy = 1 + _random.nextInt(9);
@@ -458,7 +629,8 @@ class SectorGenerator {
     // 2nd galaxy and beyond: add random breakable energyShields and spaceLitter!
     int placedClutter = 0;
     int attempts = 0;
-    while (placedClutter < 3 && attempts < 100) {
+    final targetClutter = 2 + galaxyNum;
+    while (placedClutter < targetClutter && attempts < 100) {
       attempts++;
       final wx = _random.nextInt(8);
       final wy = 1 + _random.nextInt(9);
@@ -475,10 +647,10 @@ class SectorGenerator {
         
         if (rand < 0.35) {
           wallType = 'energyShield';
-          reqPower = 2;
+          reqPower = max(2, galaxyNum - 1);
         } else if (rand < 0.70) {
           wallType = 'spaceLitter';
-          reqPower = 1;
+          reqPower = max(1, galaxyNum - 2);
         }
 
         walls.add(WallBlock(
@@ -545,7 +717,7 @@ class SectorGenerator {
         name: "ESCORT CRUISER",
         color: const Color(0xFFFF7E00),
         isInvader: true,
-        requiredLaserPower: 3,
+        requiredLaserPower: 5,
       ));
       planets.add(PlanetTarget(
         id: "hard_t2",
@@ -554,7 +726,7 @@ class SectorGenerator {
         name: "SECURITY COMMANDER",
         color: const Color(0xFFFF5252),
         isInvader: true,
-        requiredLaserPower: 3, // Shielded!
+        requiredLaserPower: 5, // Shielded!
       ));
 
       // Blocker asteroid screen
@@ -591,7 +763,7 @@ class SectorGenerator {
         name: "DEFENSIVE FIGHTER",
         color: const Color(0xFFFF7E00),
         isInvader: true,
-        requiredLaserPower: 4,
+        requiredLaserPower: 7,
       ));
       planets.add(PlanetTarget(
         id: "hard_t2",
@@ -600,7 +772,7 @@ class SectorGenerator {
         name: "DREADNOUGHT CORES",
         color: const Color(0xFFFF5252),
         isInvader: true,
-        requiredLaserPower: 4,
+        requiredLaserPower: 7,
       ));
 
       // Asteroid labyrinth layouts

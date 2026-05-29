@@ -173,6 +173,50 @@ void main() {
       progression.completedGalaxyIds.add('galaxy_2'); // Completed galaxy_2
 
       expect(g3.checkUnlockStatus(progression), isTrue);
+
+      // Galaxy 4 requires:
+      // Laser Intensity Rank F ★★★ (stars >= 3)
+      // Aiming Computer Rank F ★★ (stars >= 2)
+      // Unlocked blueprint 'gravityWell'
+      // Completed galaxy_3
+      final g4 = preloadedGalaxies.firstWhere((g) => g.id == 'galaxy_4');
+      expect(g4.checkUnlockStatus(progression), isFalse);
+
+      progression.chassisStars['intensity'] = 3; // Rank F ★★★
+      progression.chassisStars['aiming'] = 2; // Rank F ★★
+      progression.unlockedDevices.add(DeviceType.gravityWell); // Researched gravity wells
+      progression.completedGalaxyIds.add('galaxy_3'); // Completed galaxy_3
+
+      expect(g4.checkUnlockStatus(progression), isTrue);
+
+      // Galaxy 5 requires:
+      // Laser Intensity Rank F ★★★★ (stars >= 4)
+      // Aiming Computer Rank F ★★★ (stars >= 3)
+      // Unlocked blueprint 'bomb'
+      // Completed galaxy_4
+      final g5 = preloadedGalaxies.firstWhere((g) => g.id == 'galaxy_5');
+      expect(g5.checkUnlockStatus(progression), isFalse);
+
+      progression.chassisStars['intensity'] = 4; // Rank F ★★★★
+      progression.chassisStars['aiming'] = 3; // Rank F ★★★
+      progression.unlockedDevices.add(DeviceType.bomb); // Researched bombs
+      progression.completedGalaxyIds.add('galaxy_4'); // Completed galaxy_4
+      expect(g5.checkUnlockStatus(progression), isTrue);
+
+      // Galaxy 6 requires:
+      // Laser Intensity Rank E (Rank E, stars >= 0)
+      // Aiming Computer Rank F ★★★★ (stars >= 4)
+      // Unlocked blueprint 'splitter'
+      // Completed galaxy_5
+      final g6 = preloadedGalaxies.firstWhere((g) => g.id == 'galaxy_6');
+      expect(g6.checkUnlockStatus(progression), isFalse);
+
+      progression.chassisRanks['intensity'] = 'E';
+      progression.chassisStars['intensity'] = 0; // Cumulative Laser Intensity Score 4 (E rank maps to 4)
+      progression.chassisStars['aiming'] = 4; // Rank F ★★★★
+      progression.unlockedDevices.add(DeviceType.splitter); // Researched splitters
+      progression.completedGalaxyIds.add('galaxy_5'); // Completed galaxy_5
+      expect(g6.checkUnlockStatus(progression), isTrue);
     });
 
     test('Daily Hard Mission rollover, generation, boost and reward payout test', () {
@@ -183,11 +227,17 @@ void main() {
       expect(progression.dailyHardGalaxyId, isNull);
       expect(progression.dailyHardQuestId, isNull);
 
-      // Roll over with unlocked galaxies list
+      // Roll over with unlocked galaxies list containing only galaxy_1
+      progression.checkAndRollOverDailyHard(['galaxy_1']);
+      expect(progression.dailyHardGalaxyId, isNull);
+      expect(progression.dailyHardQuestId, isNull);
+
+      // Roll over with unlocked galaxies list containing galaxy_1 and galaxy_2
+      // Reset dailyHardDateStr so rollover triggers again
+      progression.dailyHardDateStr = null;
       progression.checkAndRollOverDailyHard(['galaxy_1', 'galaxy_2']);
-      expect(progression.dailyHardGalaxyId, isNotNull);
-      expect(['galaxy_1', 'galaxy_2'], contains(progression.dailyHardGalaxyId));
-      expect(progression.dailyHardQuestId, contains('daily_hard_quest_'));
+      expect(progression.dailyHardGalaxyId, 'galaxy_2'); // Excludes galaxy_1, picks galaxy_2
+      expect(progression.dailyHardQuestId, contains('daily_hard_quest_galaxy_2_'));
       expect(progression.dailyHardCompleted, isFalse);
 
       // Verify sector generation configures rewards, required inventory and isInvader flags correctly
@@ -236,6 +286,7 @@ void main() {
         paths: [],
         hitPlanetIds: {},
         explosions: [],
+        audioTriggers: const [],
         success: true,
       );
       

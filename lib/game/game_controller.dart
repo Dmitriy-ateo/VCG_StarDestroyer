@@ -7,6 +7,7 @@ import '../models/level_data.dart';
 import '../models/game_progression.dart';
 import '../models/galaxy_model.dart';
 import 'laser_calculator.dart';
+import '../services/audio_service.dart';
 
 enum PlayState {
   editing,
@@ -23,6 +24,7 @@ class GameController extends ChangeNotifier {
   late LevelData currentLevel;
   PlayState playState = PlayState.editing;
   QuestModel? activeQuest;
+  bool preMissionDialogueShown = false;
 
   // Active Level Rewards Earned
   int creditsEarned = 0;
@@ -42,6 +44,7 @@ class GameController extends ChangeNotifier {
   // Firing Animation State
   double animationProgress = 0.0;
   Timer? _animationTimer;
+  final List<Timer> _audioTimers = [];
 
   static const String _saveKey = 'ds1_player_progression';
 
@@ -101,6 +104,7 @@ class GameController extends ChangeNotifier {
     _cleanupAnimation();
 
     activeQuest = null;
+    preMissionDialogueShown = false;
 
     final baseLevel = preloadedLevels.firstWhere(
       (l) => l.id == levelId,
@@ -182,6 +186,11 @@ class GameController extends ChangeNotifier {
         if (parts.length >= 4) {
           activeGalaxyId = "${parts[2]}_${parts[3]}"; // e.g. 'galaxy_1'
         }
+      } else if (qId.startsWith('side_quest_')) {
+        final parts = qId.split('_');
+        if (parts.length >= 4 && parts[2].startsWith('galaxy')) {
+          activeGalaxyId = "${parts[2]}_${parts[3]}"; // e.g. 'galaxy_1'
+        }
       } else {
         // Search preloadedGalaxies for lore/side quests
         for (var g in preloadedGalaxies) {
@@ -222,6 +231,7 @@ class GameController extends ChangeNotifier {
   void loadQuest(QuestModel quest) {
     _cleanupAnimation();
     activeQuest = quest;
+    preMissionDialogueShown = false;
     currentLevel = quest.levelData.clone();
     _applyDailyHardBoostIfNeeded();
     aimingAngle = currentLevel.deathStarInitialAngle;
@@ -372,6 +382,10 @@ class GameController extends ChangeNotifier {
     playState = PlayState.firing;
     animationProgress = 0.0;
 
+    // Transition BGM to battle mode and play laser firing hum
+    AudioService.instance.playBgm('audio/battle_music.mp3');
+    AudioService.instance.playSfx('audio/laser_fire.mp3');
+
     // Compute Ray Trace
     traceResult = LaserCalculator.traceLaser(
       level: currentLevel,
@@ -389,6 +403,38 @@ class GameController extends ChangeNotifier {
     const tickMs = 16;
     const durationMs = 1500;
     double elapsedMs = 0;
+
+    // Schedule timed audio effects based on ray trace step indices
+    if (traceResult != null) {
+      int maxStepsInPath = 1;
+      for (var path in traceResult!.paths) {
+        if (path.length > maxStepsInPath) {
+          maxStepsInPath = path.length;
+        }
+      }
+
+      // Schedule reflections, splits, portals
+      for (var trigger in traceResult!.audioTriggers) {
+        final ratio = (trigger.stepIndex / maxStepsInPath).clamp(0.0, 1.0);
+        final delayMs = (durationMs * ratio).toInt();
+        _audioTimers.add(Timer(Duration(milliseconds: delayMs), () {
+          if (playState == PlayState.firing) {
+            AudioService.instance.playSfx(trigger.sfxName);
+          }
+        }));
+      }
+
+      // Schedule bomb/planet detonations
+      for (var explosion in traceResult!.explosions) {
+        final ratio = (explosion.stepIndex / maxStepsInPath).clamp(0.0, 1.0);
+        final delayMs = (durationMs * ratio).toInt();
+        _audioTimers.add(Timer(Duration(milliseconds: delayMs), () {
+          if (playState == PlayState.firing) {
+            AudioService.instance.playSfx('audio/explosion.mp3');
+          }
+        }));
+      }
+    }
 
     _animationTimer = Timer.periodic(const Duration(milliseconds: tickMs), (timer) {
       if (playState != PlayState.firing) {
@@ -424,6 +470,8 @@ class GameController extends ChangeNotifier {
     if (traceResult != null) {
       if (traceResult!.success) {
         playState = PlayState.victory;
+        AudioService.instance.playSfx('audio/victory.mp3');
+        AudioService.instance.playBgm('audio/bridge_music.mp3');
         
         if (activeQuest != null) {
           // Consume the placed market devices from permanent inventory
@@ -505,6 +553,8 @@ class GameController extends ChangeNotifier {
         saveProgressionToDisk();
       } else {
         playState = PlayState.defeat;
+        AudioService.instance.playSfx('audio/defeat.mp3');
+        AudioService.instance.playBgm('audio/bridge_music.mp3');
         creditsEarned = 0;
         researchPointsEarned = 0;
       }
@@ -517,6 +567,7 @@ class GameController extends ChangeNotifier {
     playState = PlayState.editing;
     traceResult = null;
     animationProgress = 0.0;
+    AudioService.instance.playBgm('audio/bridge_music.mp3');
     notifyListeners();
   }
 
@@ -691,6 +742,10 @@ class GameController extends ChangeNotifier {
   void _cleanupAnimation() {
     _animationTimer?.cancel();
     _animationTimer = null;
+    for (var timer in _audioTimers) {
+      timer.cancel();
+    }
+    _audioTimers.clear();
   }
 
   @override

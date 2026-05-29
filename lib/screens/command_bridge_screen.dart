@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../game/game_controller.dart';
+import 'galaxy_board_screen.dart';
+import '../services/audio_service.dart';
 
 class CommandBridgeScreen extends StatefulWidget {
   final GameController controller;
@@ -36,6 +38,9 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat();
+
+    // Automatically trigger deep space Command Bridge ambience music
+    AudioService.instance.playBgm('audio/bridge_music.mp3');
   }
 
   @override
@@ -46,6 +51,195 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
 
   void _triggerHaptic() {
     HapticFeedback.selectionClick();
+  }
+
+  void _showSettingsDialog(BuildContext context) {
+    _triggerHaptic();
+    AudioService.instance.playSfx('audio/hud_click.mp3');
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final isMusic = AudioService.instance.musicEnabled;
+            final isSfx = AudioService.instance.sfxEnabled;
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D1117).withOpacity(0.92),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF00FFF5), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00FFF5).withOpacity(0.12),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    )
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.settings, color: Color(0xFF00FFF5), size: 24),
+                        const SizedBox(width: 10),
+                        const Text(
+                          "BRIDGE AUDIO CONTROL",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Color(0xFF8B949E)),
+                          onPressed: () {
+                            _triggerHaptic();
+                            AudioService.instance.playSfx('audio/hud_click.mp3');
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Color(0xFF21262D), height: 16, thickness: 1),
+                    const SizedBox(height: 12),
+
+                    // Background Music Option
+                    Row(
+                      children: [
+                        const Icon(Icons.music_note, color: Colors.amberAccent, size: 20),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "BACKGROUND MUSIC",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                "Cinematic retro space ambient loops",
+                                style: TextStyle(
+                                  color: Color(0xFF8B949E),
+                                  fontSize: 9.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: isMusic,
+                          activeColor: const Color(0xFF00FFF5),
+                          activeTrackColor: const Color(0xFF00FFF5).withOpacity(0.3),
+                          onChanged: (val) async {
+                            _triggerHaptic();
+                            await AudioService.instance.toggleMusic(val);
+                            if (val) {
+                              await AudioService.instance.playBgm('audio/bridge_music.mp3');
+                            }
+                            setDialogState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Sound Effects Option
+                    Row(
+                      children: [
+                        const Icon(Icons.volume_up, color: Color(0xFFFF2E93), size: 20),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "SOUND EFFECTS",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                "Laser zaps, portal warps, and explosions",
+                                style: TextStyle(
+                                  color: Color(0xFF8B949E),
+                                  fontSize: 9.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: isSfx,
+                          activeColor: const Color(0xFF00FFF5),
+                          activeTrackColor: const Color(0xFF00FFF5).withOpacity(0.3),
+                          onChanged: (val) async {
+                            _triggerHaptic();
+                            await AudioService.instance.toggleSfx(val);
+                            if (val) {
+                              await AudioService.instance.playSfx('audio/hud_click.mp3');
+                            }
+                            setDialogState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Close Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF161B22),
+                          foregroundColor: const Color(0xFF00FFF5),
+                          side: const BorderSide(color: Color(0xFF00FFF5), width: 1.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () {
+                          _triggerHaptic();
+                          AudioService.instance.playSfx('audio/hud_click.mp3');
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text(
+                          "DISMISS CONFIG",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            letterSpacing: 1.0,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showBriefingDialog(BuildContext context) {
@@ -232,13 +426,42 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
     );
   }
 
+  Widget _buildSettingsChip(IconData icon, String label, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161B22).withOpacity(0.85),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accentColor.withOpacity(0.3), width: 1.0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: accentColor, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 9.5,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final progression = widget.controller.progression;
     final unlockedGalaxiesCount = max(1, progression.completedGalaxyIds.length + 1);
     
     // Check if daily hard mission is active (uncompleted) in any galaxy
-    final hasDailyAlert = progression.dailyHardGalaxyId != null && !progression.dailyHardCompleted;
+    final hasDailyAlert = progression.dailyHardGalaxyId != null &&
+        !progression.dailyHardCompleted &&
+        GalaxyBoardScreen.completedDailyCount < 10;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E14),
@@ -455,6 +678,17 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                                   child: MouseRegion(
                                     cursor: SystemMouseCursors.click,
                                     child: _buildStatChip(Icons.science, "${progression.researchPoints} RP", Colors.purpleAccent),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () {
+                                    _triggerHaptic();
+                                    _showSettingsDialog(context);
+                                  },
+                                  child: MouseRegion(
+                                    cursor: SystemMouseCursors.click,
+                                    child: _buildSettingsChip(Icons.settings, "SETTINGS", const Color(0xFF00FFF5)),
                                   ),
                                 ),
                                 if (hasDailyAlert) ...[
