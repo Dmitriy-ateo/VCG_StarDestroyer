@@ -243,7 +243,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                           final double px = nodeSize / 2 + dx;
                                           final double py = nodeSize / 2 + dy;
 
-                                          const double hardAngle = pi / 2; // Fixed at the bottom center of the node
+                                          const double hardAngle = pi / 4; // Shifted to the bottom-right to prevent overlap with the bottom title banner
                                           final double hdx = orbitRadius * cos(hardAngle);
                                           final double hdy = orbitRadius * sin(hardAngle);
                                           final double hpx = nodeSize / 2 + hdx;

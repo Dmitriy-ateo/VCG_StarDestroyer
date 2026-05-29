@@ -710,10 +710,10 @@ class _HotspotOverlayPainter extends CustomPainter {
       bl = Offset(size.width * 0.26, size.height * 0.92);
     } else if (id == 'market') {
       // Left door lock display (highly slanted vertical side perspective)
-      tl = Offset(size.width * 0.24, size.height * 0.02);
+      tl = Offset(size.width * 0.24, -size.height * 0.16);
       tr = Offset(size.width * 0.96, size.height * 0.05);
       br = Offset(size.width * 1.0, size.height * 0.86);
-      bl = Offset(size.width * 0.24, size.height * 0.98);
+      bl = Offset(size.width * 0.24, size.height * 0.80);
     } else if (id == 'training') {
       // Bottom-Right control terminal console screen (slanted isometric screen)
       tl = Offset(size.width * 0.12, size.height * 0.25);
