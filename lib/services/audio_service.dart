@@ -23,6 +23,7 @@ class AudioService {
 
   bool _musicEnabled = true;
   bool _sfxEnabled = true;
+  String? _currentBgmAsset;
 
   bool get musicEnabled => _musicEnabled;
   bool get sfxEnabled => _sfxEnabled;
@@ -56,6 +57,8 @@ class AudioService {
 
   /// Play background music looping
   Future<void> playBgm(String assetName) async {
+    if (_currentBgmAsset == assetName) return;
+    _currentBgmAsset = assetName;
     if (!_musicEnabled) return;
     if (_isTestEnv) {
       debugPrint("AudioService: [MOCK BGM PLAY] $assetName");
@@ -74,6 +77,7 @@ class AudioService {
 
   /// Stop background music
   Future<void> stopBgm() async {
+    _currentBgmAsset = null;
     if (_isTestEnv) {
       debugPrint("AudioService: [MOCK BGM STOP]");
       return;
@@ -122,7 +126,24 @@ class AudioService {
     }
 
     if (!enabled) {
-      await stopBgm();
+      if (_isTestEnv) {
+        debugPrint("AudioService: [MOCK BGM STOP]");
+      } else {
+        try {
+          if (_bgmPlayer != null) {
+            await _bgmPlayer!.stop();
+            debugPrint("AudioService: Stopped BGM");
+          }
+        } catch (e) {
+          debugPrint("AudioService: BGM Stop error: $e");
+        }
+      }
+    } else {
+      if (_currentBgmAsset != null) {
+        final asset = _currentBgmAsset!;
+        _currentBgmAsset = null; // Reset to allow playBgm to run
+        await playBgm(asset);
+      }
     }
   }
 
