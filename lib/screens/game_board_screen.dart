@@ -50,6 +50,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   @override
   void initState() {
     super.initState();
+    AudioService.instance.playBgm('audio/battle_music.mp3');
     _bgAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 16),
@@ -86,6 +87,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
 
   @override
   void dispose() {
+    AudioService.instance.playBgm('audio/bridge_music.mp3');
     _bgAnimationController.dispose();
     _aimAnimationController.dispose();
     _hudAnimationController.dispose();

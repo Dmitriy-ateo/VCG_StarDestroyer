@@ -382,8 +382,7 @@ class GameController extends ChangeNotifier {
     playState = PlayState.firing;
     animationProgress = 0.0;
 
-    // Transition BGM to battle mode and play laser firing hum
-    AudioService.instance.playBgm('audio/battle_music.mp3');
+    // Play laser firing hum
     AudioService.instance.playSfx('audio/laser_fire.mp3');
 
     // Compute Ray Trace
@@ -471,7 +470,6 @@ class GameController extends ChangeNotifier {
       if (traceResult!.success) {
         playState = PlayState.victory;
         AudioService.instance.playSfx('audio/victory.mp3');
-        AudioService.instance.playBgm('audio/bridge_music.mp3');
         
         if (activeQuest != null) {
           // Consume the placed market devices from permanent inventory
@@ -554,7 +552,6 @@ class GameController extends ChangeNotifier {
       } else {
         playState = PlayState.defeat;
         AudioService.instance.playSfx('audio/defeat.mp3');
-        AudioService.instance.playBgm('audio/bridge_music.mp3');
         creditsEarned = 0;
         researchPointsEarned = 0;
       }
@@ -567,7 +564,6 @@ class GameController extends ChangeNotifier {
     playState = PlayState.editing;
     traceResult = null;
     animationProgress = 0.0;
-    AudioService.instance.playBgm('audio/bridge_music.mp3');
     notifyListeners();
   }
 
