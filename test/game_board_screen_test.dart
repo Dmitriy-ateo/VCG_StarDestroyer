@@ -22,6 +22,8 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       controller = GameController();
       wentToShop = false;
+      GalaxyBoardScreen.sessionDailyQuestsMap = null;
+      GalaxyBoardScreen.completedDailyCount = 0;
     });
 
     testWidgets('Toolbox button is always visible in editing mode even when inventory is empty', (WidgetTester tester) async {
