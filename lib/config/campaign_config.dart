@@ -299,7 +299,9 @@ const String campaignJsonConfig = r'''
           ],
           "walls": [
             { "gridX": 1, "gridY": 4, "isDestructible": false, "type": "crystal", "requiredLaserPower": 3 },
-            { "gridX": 6, "gridY": 4, "type": "crystal", "requiredLaserPower": 3 }
+            { "gridX": 6, "gridY": 4, "type": "crystal", "requiredLaserPower": 3 },
+            { "gridX": 3, "gridY": 7, "isDestructible": false, "type": "energyShield", "requiredLaserPower": 2 },
+            { "gridX": 3, "gridY": 8, "isDestructible": false, "type": "crystal", "requiredLaserPower": 3 }
           ],
           "availableInventory": [
             { "id": "t_split1", "type": "splitter", "splitAngleDegrees": 180.0 },

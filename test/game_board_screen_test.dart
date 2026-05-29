@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:single_shot/screens/game_board_screen.dart';
 import 'package:single_shot/game/game_controller.dart';
+import 'package:single_shot/models/galaxy_model.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +57,28 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350)); // Wait for animation
 
       expect(wentToShop, isTrue);
+    });
+
+    test('Quest 6 (The Quantum Paradox) has blocking walls at (3, 7) and (3, 8) to force portals', () {
+      final quest6 = preloadedGalaxies.expand((g) => g.quests).firstWhere((q) => q.id == 'q6');
+      controller.loadQuest(quest6);
+      final walls = controller.currentLevel.walls;
+
+      // Verify we have the crystal wall at (3, 8) requiring power 3
+      final crystalWall = walls.firstWhere(
+        (w) => w.gridX == 3 && w.gridY == 8,
+      );
+      expect(crystalWall.type, 'crystal');
+      expect(crystalWall.requiredLaserPower, 3);
+      expect(crystalWall.isDestructible, isFalse);
+
+      // Verify we have the energy shield at (3, 7) requiring power 2
+      final energyShield = walls.firstWhere(
+        (w) => w.gridX == 3 && w.gridY == 7,
+      );
+      expect(energyShield.type, 'energyShield');
+      expect(energyShield.requiredLaserPower, 2);
+      expect(energyShield.isDestructible, isFalse);
     });
   });
 }
