@@ -405,16 +405,11 @@ class GameController extends ChangeNotifier {
 
     // Schedule timed audio effects based on ray trace step indices
     if (traceResult != null) {
-      int maxStepsInPath = 1;
-      for (var path in traceResult!.paths) {
-        if (path.length > maxStepsInPath) {
-          maxStepsInPath = path.length;
-        }
-      }
+      final double totalSteps = LaserCalculator.maxSteps.toDouble();
 
       // Schedule reflections, splits, portals
       for (var trigger in traceResult!.audioTriggers) {
-        final ratio = (trigger.stepIndex / maxStepsInPath).clamp(0.0, 1.0);
+        final ratio = (trigger.stepIndex / totalSteps).clamp(0.0, 1.0);
         final delayMs = (durationMs * ratio).toInt();
         _audioTimers.add(Timer(Duration(milliseconds: delayMs), () {
           if (playState == PlayState.firing) {
@@ -425,7 +420,7 @@ class GameController extends ChangeNotifier {
 
       // Schedule bomb/planet detonations
       for (var explosion in traceResult!.explosions) {
-        final ratio = (explosion.stepIndex / maxStepsInPath).clamp(0.0, 1.0);
+        final ratio = (explosion.stepIndex / totalSteps).clamp(0.0, 1.0);
         final delayMs = (durationMs * ratio).toInt();
         _audioTimers.add(Timer(Duration(milliseconds: delayMs), () {
           if (playState == PlayState.firing) {
