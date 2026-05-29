@@ -615,6 +615,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                                     icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
                                     onPressed: () {
                                       _triggerHaptic();
+                                      AudioService.instance.playSfx('audio/hud_click.mp3');
                                       widget.onBackToMenu();
                                     },
                                     padding: EdgeInsets.zero,
@@ -662,6 +663,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                                 GestureDetector(
                                   onTap: () {
                                     _triggerHaptic();
+                                    AudioService.instance.playSfx('audio/hud_click.mp3');
                                     widget.onOpenMarket();
                                   },
                                   child: MouseRegion(
@@ -673,6 +675,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                                 GestureDetector(
                                   onTap: () {
                                     _triggerHaptic();
+                                    AudioService.instance.playSfx('audio/hud_click.mp3');
                                     widget.onOpenShop();
                                   },
                                   child: MouseRegion(
@@ -684,6 +687,7 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                                 GestureDetector(
                                   onTap: () {
                                     _triggerHaptic();
+                                    AudioService.instance.playSfx('audio/hud_click.mp3');
                                     _showSettingsDialog(context);
                                   },
                                   child: MouseRegion(

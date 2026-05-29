@@ -324,7 +324,10 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                   icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5), size: 20),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  onPressed: widget.onBackToMenu,
+                  onPressed: () {
+                    AudioService.instance.playSfx('audio/hud_click.mp3');
+                    widget.onBackToMenu();
+                  },
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -348,6 +351,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                       GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
+                          AudioService.instance.playSfx('audio/hud_click.mp3');
                           _showLevelInfoDialog(context, level);
                         },
                         child: const MouseRegion(
@@ -374,6 +378,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
               GestureDetector(
                 onTap: isEditing ? () {
                   HapticFeedback.lightImpact();
+                  AudioService.instance.playSfx('audio/hud_click.mp3');
                   widget.onGoToShop();
                 } : null,
                 child: MouseRegion(
@@ -388,6 +393,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
               GestureDetector(
                 onTap: isEditing ? () {
                   HapticFeedback.lightImpact();
+                  AudioService.instance.playSfx('audio/hud_click.mp3');
                   widget.onGoToResearch();
                 } : null,
                 child: MouseRegion(

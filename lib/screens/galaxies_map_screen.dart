@@ -109,7 +109,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                              onPressed: widget.onBackToMenu,
+                              onPressed: () {
+                                AudioService.instance.playSfx('audio/hud_click.mp3');
+                                widget.onBackToMenu();
+                              },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -156,6 +159,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               widget.onGoToShop();
                             },
                             child: MouseRegion(
@@ -167,6 +171,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               widget.onGoToResearch();
                             },
                             child: MouseRegion(
