@@ -481,5 +481,46 @@ void main() {
       final hasAsteroid = controller.currentLevel.availableInventory.any((d) => d.type == DeviceType.floatingAsteroid);
       expect(hasAsteroid, isTrue);
     });
+
+    test('Deflector Sub-Chassis capacity limit restricts placing all device types based on progression level', () {
+      final controller = GameController();
+      controller.progression.chassisRanks['chassis'] = 'F';
+      controller.progression.chassisStars['chassis'] = 0; // level = 1, capacity = 1 + 1 = 2
+      
+      // Clear placed devices
+      controller.placedDevices.clear();
+      
+      // Inject different devices into inventory
+      final ref1 = DeviceModel(id: 'ref_t1', type: DeviceType.reflector);
+      final split = DeviceModel(id: 'split_t1', type: DeviceType.splitter, splitAngleDegrees: 180.0);
+      final bomb = DeviceModel(id: 'bomb_t1', type: DeviceType.bomb);
+      
+      // Place reflector (should succeed)
+      controller.selectedInventoryDevice = ref1;
+      bool placed1 = controller.placeDevice(2, 2);
+      expect(placed1, isTrue);
+      expect(controller.placedDevices.length, 1);
+      
+      // Place splitter (should succeed, meets max capacity of 2)
+      controller.selectedInventoryDevice = split;
+      bool placed2 = controller.placeDevice(3, 3);
+      expect(placed2, isTrue);
+      expect(controller.placedDevices.length, 2);
+      
+      // Place bomb (should fail, exceeds capacity of 2)
+      controller.selectedInventoryDevice = bomb;
+      bool placed3 = controller.placeDevice(4, 4);
+      expect(placed3, isFalse);
+      expect(controller.placedDevices.length, 2);
+      
+      // Upgrade Deflector Sub-Chassis to Level 2 (F, 1 Star) -> capacity = 3
+      controller.progression.chassisStars['chassis'] = 1;
+      expect(controller.progression.chassisCapacityLevel, 2);
+      
+      // Place bomb (should now succeed!)
+      bool placed3AfterUpgrade = controller.placeDevice(4, 4);
+      expect(placed3AfterUpgrade, isTrue);
+      expect(controller.placedDevices.length, 3);
+    });
   });
 }

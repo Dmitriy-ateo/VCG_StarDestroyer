@@ -317,6 +317,13 @@ class GameController extends ChangeNotifier {
 
     final dev = selectedInventoryDevice!;
     
+    // Enforce Sub-Chassis Device Capacity (limits all placed devices combined)
+    final totalPlacedDevicesCount = placedDevices.length;
+    final maxDevices = 1 + progression.chassisCapacityLevel;
+    if (totalPlacedDevicesCount >= maxDevices) {
+      return false;
+    }
+    
     // Remove from active inventory list selection, set position
     dev.gridX = x;
     dev.gridY = y;

@@ -353,6 +353,15 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                           "These are preset volcanic obstacles, not purchasable inventory. "
                           "They shatter on superlaser hit, deflecting the beam's trajectory precisely relative to their rotation angle."
                         ),
+                        const SizedBox(height: 16),
+                        _buildSectionHeader("9. NEW RECRUIT QUICK-START GUIDE"),
+                        _buildSectionText(
+                          "Welcome to the fleet, Admiral! Here is your quick-start protocol to dominate the galaxy:\n"
+                          "• 🚀 Start Small: You begin with 0 Credits and 0 RP. Focus on the 5 Training Sectors in Galaxy 1 (Core Outpost) first. They are designed to teach you basic vector physics and help you earn initial Credits and RP.\n"
+                          "• 🛡️ Anti-Softlock Shield: Galaxy 1 campaign sectors are 100% immune to 'Daily Hard' threat modifiers. Under no circumstances will starting sectors be hardened or shields boosted, ensuring a 100% solvable and enjoyable introduction!\n"
+                          "• 💡 Tech Strategy: Standard splitters and portals drain exactly 1 laser power at Level 1. Prioritize upgrading them in the Research Lab to Level 2+ (Rank F ★ and above) using RP to achieve 100% efficient, lossless transit!\n"
+                          "• 🎯 Interactive Hotspots: Use the central Hologram Table to access the Research Lab, the Left Sliding Door for the Tactical Market, the main Viewport to select Galaxy campaign levels, and the bottom-right terminal to calibrate targets in simulated training programs."
+                        ),
                       ],
                     ),
                   ),

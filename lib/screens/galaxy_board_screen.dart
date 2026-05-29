@@ -241,7 +241,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   // Helper to generate a stable, non-overlapping pseudo-random angle on an orbit path
   double _getStableQuestAngle(String questId, List<double> existingAngles) {
     if (!_questAngles.containsKey(questId)) {
-      final random = Random();
+      final random = Random(questId.hashCode);
       double angle = random.nextDouble() * 2.0 * pi;
 
       // Try to find a non-overlapping angle (up to 15 attempts)

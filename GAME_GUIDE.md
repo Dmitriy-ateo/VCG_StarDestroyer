@@ -212,7 +212,16 @@ To protect your strategic career and progression:
 The Command Bridge acts as the central strategic hub of the Star Destroyer, providing five interactive hotspots that link the player to various game systems:
 
 *   **Tactical Market (Left Sliding Door)**: Accesses the blueprint shop for splitters, bombs, and special items. Bounded by a perfectly vertical 3D perspective projection quad representing the sliding door frame to maintain isometric alignment.
-*   **Tactical Briefing (Bottom-Left Desk)**: Opens the Admiral's logs and system manuals.
+*   **Tactical Briefing (Bottom-Left Desk)**: Opens the Admiral's logs and system manuals. This interactive terminal displays a comprehensive 9-part tactical briefing designed to onboard new recruits:
+    1. **The Superlaser Blueprint**: Fundamentals of vector reflections (90°) and guiding beams.
+    2. **Prism Crystal Splitters**: Multi-path bifurcation details and Level 2+ lossless upgrades.
+    3. **Teleportation Portals**: Portal-A to Portal-B instant transits and Level 2+ stability updates.
+    4. **Breakable Barriers & Penetration**: Descriptions of Energy Shields, Crystal Matrixes, Scrap Metal, and space debris.
+    5. **RPG Sub-Systems & Blueprints**: RPG upgrades structure (F to SSS ranks, star sub-tiers, and level-wrapping loops) using Credits for sub-systems and RP for device blueprints.
+    6. **Tactical Controls & Radial HUD**: Board interface gestures (Single-Tap rotation and 350ms Long-Press lock-on Radial HUD).
+    7. **Seamless Audio Command Deck**: Dynamic soundtrack transitions and seamless, non-restarting BGM loop continuity.
+    8. **Pre-placed Field Asteroids**: Volcanic space rocks pre-placed on outer-rim fields that deflect rays before shattering.
+    9. **New Recruit Quick-Start**: Crucial onboarding rules detailing starting parameters (0 Credits/RP), Galaxy 1 tutorial priorities, anti-softlock shields (Galaxy 1 immunity to Daily Hard boosts), and terminal hotspots.
 *   **Research Lab (Center Hologram Table)**: Displays floating wireframe holograms of structural modules, facilitating R&D technology upgrades using RP.
 *   **Launch Campaign (Main Viewport)**: Leads to the star galaxy selection map.
 *   **Training Center (Bottom-Right Terminal)**: Launches simulated sectors for targeting calibration.

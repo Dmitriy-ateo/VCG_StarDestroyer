@@ -620,6 +620,50 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
 
               // Check if selecting to place a device
               if (widget.controller.selectedInventoryDevice != null) {
+                final totalPlacedDevicesCount = widget.controller.placedDevices.length;
+                final maxDevices = 1 + widget.controller.progression.chassisCapacityLevel;
+                if (totalPlacedDevicesCount >= maxDevices) {
+                  HapticFeedback.heavyImpact();
+                  AudioService.instance.playSfx('audio/defeat.mp3');
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.clearSnackBars();
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.only(
+                        bottom: (screenHeight - 120).clamp(0.0, double.infinity),
+                        left: 24,
+                        right: 24,
+                      ),
+                      backgroundColor: const Color(0xFF161B22),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Color(0xFFFF3333), width: 1.5),
+                      ),
+                      content: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Color(0xFFFF3333), size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              "SUB-CHASSIS LIMIT EXCEEDED!\nMax Devices: $maxDevices. Upgrade in Research Lab.",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  return;
+                }
+
                 widget.controller.placeDevice(x, y);
                 // Clear hover position after placing
                 setState(() {
