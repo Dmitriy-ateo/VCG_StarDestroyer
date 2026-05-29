@@ -6,6 +6,7 @@ import '../models/galaxy_model.dart';
 import '../models/game_progression.dart';
 import '../game/game_controller.dart';
 import 'galaxy_board_screen.dart';
+import '../services/audio_service.dart';
 
 class GalaxiesMapScreen extends StatefulWidget {
   final GameController controller;
@@ -108,7 +109,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                              onPressed: widget.onBackToMenu,
+                              onPressed: () {
+                                AudioService.instance.playSfx('audio/hud_click.mp3');
+                                widget.onBackToMenu();
+                              },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -155,6 +159,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               widget.onGoToShop();
                             },
                             child: MouseRegion(
@@ -166,6 +171,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               widget.onGoToResearch();
                             },
                             child: MouseRegion(
@@ -250,7 +256,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
                                     width: nodeSize,
                                     height: nodeSize,
                                     child: GestureDetector(
-                                      onTap: () => _showGalaxyTravelModal(context, galaxy, isUnlocked, progression),
+                                      onTap: () {
+                                        AudioService.instance.playSfx('audio/hud_click.mp3');
+                                        _showGalaxyTravelModal(context, galaxy, isUnlocked, progression);
+                                      },
                                       child: AnimatedBuilder(
                                         animation: _animationController,
                                         builder: (context, child) {
@@ -639,7 +648,10 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  AudioService.instance.playSfx('audio/hud_click.mp3');
+                  Navigator.of(context).pop();
+                },
                 child: const Text(
                   "DISMISS",
                   style: TextStyle(
@@ -652,6 +664,7 @@ class _GalaxiesMapScreenState extends State<GalaxiesMapScreen> with SingleTicker
               ElevatedButton(
                 onPressed: isUnlocked
                     ? () {
+                        AudioService.instance.playSfx('audio/hud_click.mp3');
                         Navigator.of(context).pop();
                         widget.onGalaxySelected(galaxy.id);
                       }

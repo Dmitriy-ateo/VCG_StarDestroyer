@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/level_data.dart';
 import '../game/game_controller.dart';
+import '../services/audio_service.dart';
 
 class LevelSelectScreen extends StatefulWidget {
   final GameController controller;
@@ -76,7 +77,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                              onPressed: widget.onBackToMenu,
+                              onPressed: () {
+                                AudioService.instance.playSfx('audio/hud_click.mp3');
+                                widget.onBackToMenu();
+                              },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -132,7 +136,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           child: InkWell(
-                            onTap: isUnlocked ? () => widget.onLevelSelected(level.id) : null,
+                            onTap: isUnlocked ? () {
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
+                              widget.onLevelSelected(level.id);
+                            } : null,
                             borderRadius: BorderRadius.circular(12),
                             child: Opacity(
                               opacity: isUnlocked ? 1.0 : 0.4,

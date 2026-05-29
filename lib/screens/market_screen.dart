@@ -127,7 +127,10 @@ class MarketScreen extends StatelessWidget {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                              onPressed: onBackToMenu,
+                              onPressed: () {
+                                AudioService.instance.playSfx('audio/hud_click.mp3');
+                                onBackToMenu();
+                              },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -181,6 +184,7 @@ class MarketScreen extends StatelessWidget {
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               onGoToResearch();
                             },
                             child: MouseRegion(

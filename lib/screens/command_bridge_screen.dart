@@ -763,7 +763,10 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
           });
         },
         child: GestureDetector(
-          onTap: onTap,
+          onTap: () {
+            AudioService.instance.playSfx('audio/hud_click.mp3');
+            onTap();
+          },
           behavior: HitTestBehavior.opaque,
           child: Stack(
             clipBehavior: Clip.none,

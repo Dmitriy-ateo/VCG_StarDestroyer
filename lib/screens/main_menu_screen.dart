@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/audio_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
   final VoidCallback onEnterBridge;
@@ -141,6 +142,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
     String? subtitle,
   }) {
     final isEnabled = onPressed != null;
+    final wrappedOnPressed = isEnabled ? () {
+      AudioService.instance.playSfx('audio/hud_click.mp3');
+      onPressed();
+    } : null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -161,7 +167,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
           ),
           child: isPrimary
               ? ElevatedButton(
-                  onPressed: onPressed,
+                  onPressed: wrappedOnPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isEnabled ? const Color(0xFF00ADB5) : const Color(0xFF222831),
                     foregroundColor: isEnabled ? Colors.white : Colors.grey,
@@ -176,7 +182,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> with SingleTickerProvid
                   ),
                 )
               : OutlinedButton(
-                  onPressed: onPressed,
+                  onPressed: wrappedOnPressed,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isEnabled ? const Color(0xFF00ADB5) : Colors.grey,
                     side: BorderSide(color: isEnabled ? const Color(0xFF00ADB5) : const Color(0xFF393E46), width: 1.5),

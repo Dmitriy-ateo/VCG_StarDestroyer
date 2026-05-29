@@ -44,7 +44,10 @@ class ResearchShopScreen extends StatelessWidget {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                                onPressed: onBackToGame,
+                                onPressed: () {
+                                  AudioService.instance.playSfx('audio/hud_click.mp3');
+                                  onBackToGame();
+                                },
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                               ),
@@ -91,6 +94,7 @@ class ResearchShopScreen extends StatelessWidget {
                             GestureDetector(
                               onTap: () {
                                 HapticFeedback.lightImpact();
+                                AudioService.instance.playSfx('audio/hud_click.mp3');
                                 onGoToShop();
                               },
                               child: MouseRegion(
@@ -134,6 +138,9 @@ class ResearchShopScreen extends StatelessWidget {
 
                     // Cyberpunk Neon TabBar
                     TabBar(
+                      onTap: (index) {
+                        AudioService.instance.playSfx('audio/hud_click.mp3');
+                      },
                       labelColor: const Color(0xFF00FFF5),
                       unselectedLabelColor: Colors.grey,
                       indicatorColor: const Color(0xFF00ADB5),

@@ -8,6 +8,7 @@ import '../models/level_data.dart';
 import '../game/game_controller.dart';
 import '../game/sector_generator.dart';
 import '../theme/style_guide.dart';
+import '../services/audio_service.dart';
 
 class GalaxyBoardScreen extends StatefulWidget {
   final GameController controller;
@@ -332,7 +333,10 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                           children: [
                             IconButton(
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF00ADB5)),
-                              onPressed: widget.onBackToMap,
+                              onPressed: () {
+                                AudioService.instance.playSfx('audio/hud_click.mp3');
+                                widget.onBackToMap();
+                              },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
@@ -379,6 +383,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               widget.onGoToShop();
                             },
                             child: MouseRegion(
@@ -390,6 +395,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
+                              AudioService.instance.playSfx('audio/hud_click.mp3');
                               widget.onGoToResearch();
                             },
                             child: MouseRegion(
@@ -588,6 +594,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
+          AudioService.instance.playSfx('audio/hud_click.mp3');
           setState(() {
             if (isSelected) {
               _selectedQuest = null; // Toggle dismiss
@@ -748,6 +755,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () {
+                  AudioService.instance.playSfx('audio/hud_click.mp3');
                   setState(() {
                     _selectedQuest = null;
                   });
@@ -954,6 +962,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
             child: ElevatedButton(
               onPressed: () {
                 HapticFeedback.mediumImpact();
+                AudioService.instance.playSfx('audio/hud_click.mp3');
                 final q = _selectedQuest;
                 setState(() {
                   _selectedQuest = null; // reset selected drawer state
