@@ -100,15 +100,6 @@ class MarketScreen extends StatelessWidget {
               glowColor: const Color(0xFFFF9F1C),
               isResearched: progression.unlockedDevices.contains(DeviceType.portal),
             ),
-            _MarketItemData(
-              itemId: "floatingAsteroid",
-              name: "Floating Deflection Asteroid",
-              description: "Organic beatable space rock. Shatters on hit, deviating the laser by its rotation angle.",
-              price: GameProgression.getMarketItemPrice("floatingAsteroid"),
-              icon: Icons.grain,
-              glowColor: const Color(0xFFFFB703),
-              isResearched: progression.unlockedDevices.contains(DeviceType.floatingAsteroid),
-            ),
           ];
 
           return SafeArea(
