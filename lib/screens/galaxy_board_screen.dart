@@ -35,13 +35,13 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   late AnimationController _animationController;
   QuestModel? _selectedQuest;
 
-  // Session-persistent daily quests state
-  static List<QuestModel>? _sessionDailyQuests;
+  // Session-persistent daily quests state mapped by galaxyId
+  static Map<String, List<QuestModel>>? _sessionDailyQuestsMap;
   static int _completedDailyCount = 0;
 
-  // Session-persistent daily hard quest state
-  static QuestModel? _sessionDailyHardQuest;
-  static String? _sessionDailyHardDateStr;
+  // Session-persistent daily hard quest state mapped by galaxyId
+  static Map<String, QuestModel?>? _sessionDailyHardQuestMap;
+  static Map<String, String?>? _sessionDailyHardDateStrMap;
 
   // Session-persistent side quests state mapped by galaxyId
   static Map<String, List<QuestModel>>? _sessionSideQuestsMap;
@@ -68,10 +68,16 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
   // Initialize and refresh today's Daily Hard Quest
   void _initializeDailyHardQuest(GameProgression progression) {
     final today = progression.dailyHardDateStr;
-    if (_sessionDailyHardQuest == null || _sessionDailyHardDateStr != today) {
+    _sessionDailyHardQuestMap ??= {};
+    _sessionDailyHardDateStrMap ??= {};
+
+    final currentQuest = _sessionDailyHardQuestMap![widget.galaxyId];
+    final currentDateStr = _sessionDailyHardDateStrMap![widget.galaxyId];
+
+    if (currentQuest == null || currentDateStr != today) {
       if (progression.dailyHardGalaxyId == widget.galaxyId && !progression.dailyHardCompleted) {
         final hardLevel = SectorGenerator.generateDailyHardSector(progression, widget.galaxyId);
-        _sessionDailyHardQuest = QuestModel(
+        _sessionDailyHardQuestMap![widget.galaxyId] = QuestModel(
           id: progression.dailyHardQuestId ?? "daily_hard_quest_${widget.galaxyId}",
           title: hardLevel.name,
           description: hardLevel.description,
@@ -81,39 +87,41 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
           rpReward: hardLevel.researchPointsReward,
           levelData: hardLevel,
         );
-        _sessionDailyHardDateStr = today;
+        _sessionDailyHardDateStrMap![widget.galaxyId] = today;
       } else {
-        _sessionDailyHardQuest = null;
-        _sessionDailyHardDateStr = today;
+        _sessionDailyHardQuestMap![widget.galaxyId] = null;
+        _sessionDailyHardDateStrMap![widget.galaxyId] = today;
       }
     } else {
       if (progression.dailyHardCompleted) {
-        _sessionDailyHardQuest = null;
+        _sessionDailyHardQuestMap![widget.galaxyId] = null;
       }
     }
   }
 
   // Initialize and refresh daily quests list
   void _initializeSessionDailyQuests(GameProgression progression) {
-    if (_sessionDailyQuests == null) {
-      _sessionDailyQuests = [];
+    _sessionDailyQuestsMap ??= {};
+
+    if (_sessionDailyQuestsMap![widget.galaxyId] == null) {
+      _sessionDailyQuestsMap![widget.galaxyId] = [];
       for (int i = 0; i < 3; i++) {
-        _sessionDailyQuests!.add(_generateUniqueDailyQuest(progression));
+        _sessionDailyQuestsMap![widget.galaxyId]!.add(_generateUniqueDailyQuest(progression));
       }
     } else {
       // Clean completed procedural daily quests
       final completedIds = progression.completedQuestIds;
-      final beforeCount = _sessionDailyQuests!.length;
-      _sessionDailyQuests!.removeWhere((q) => completedIds.contains(q.id));
-      final completedDelta = beforeCount - _sessionDailyQuests!.length;
+      final beforeCount = _sessionDailyQuestsMap![widget.galaxyId]!.length;
+      _sessionDailyQuestsMap![widget.galaxyId]!.removeWhere((q) => completedIds.contains(q.id));
+      final completedDelta = beforeCount - _sessionDailyQuestsMap![widget.galaxyId]!.length;
       _completedDailyCount += completedDelta;
 
       // Spawning new daily sectors up to a maximum limit of 10 completions per session
       if (_completedDailyCount < 10) {
-        final int maxToGenerate = 3 - _sessionDailyQuests!.length;
+        final int maxToGenerate = 3 - _sessionDailyQuestsMap![widget.galaxyId]!.length;
         for (int i = 0; i < maxToGenerate; i++) {
-          if (_completedDailyCount + _sessionDailyQuests!.length < 10) {
-            _sessionDailyQuests!.add(_generateUniqueDailyQuest(progression));
+          if (_completedDailyCount + _sessionDailyQuestsMap![widget.galaxyId]!.length < 10) {
+            _sessionDailyQuestsMap![widget.galaxyId]!.add(_generateUniqueDailyQuest(progression));
           }
         }
       }
@@ -260,10 +268,11 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
           // Daily quests: Max 3 active (incomplete) Daily quests (10 max total completions, refilled dynamically when completed)
           _initializeSessionDailyQuests(progression);
-          final dailyQuests = _sessionDailyQuests ?? const <QuestModel>[];
+          final dailyQuests = _sessionDailyQuestsMap?[widget.galaxyId] ?? const <QuestModel>[];
 
           // Daily Hard Quest: 1 highly challenging mission per day in a random galaxy
           _initializeDailyHardQuest(progression);
+          final currentDailyHardQuest = _sessionDailyHardQuestMap?[widget.galaxyId];
 
           // Collect already-computed angles for both orbits to prevent overlapping
           final List<double> sideAngles = [];
@@ -453,9 +462,9 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
                                 }),
 
                                 // D. Active Daily Hard Quest Node (Orbit 3, Outer, opposite rightmost coordinate)
-                                if (_sessionDailyHardQuest != null)
+                                if (currentDailyHardQuest != null)
                                   _buildOrbitingPlanet(
-                                    quest: _sessionDailyHardQuest!,
+                                    quest: currentDailyHardQuest,
                                     center: center,
                                     rx: orbitXRadii[2],
                                     ry: orbitYRadii[2],
