@@ -46,6 +46,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   bool _hasShownPostMissionDialogue = false;
   List<DialogueNode>? _dialogueSequence;
   VoidCallback? _onDialogueComplete;
+  PlayState? _lastPlayState;
 
   @override
   void initState() {
@@ -83,15 +84,34 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
         };
       }
     }
+    _lastPlayState = widget.controller.playState;
+    widget.controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
     AudioService.instance.playBgm('audio/bridge_music.mp3');
     _bgAnimationController.dispose();
     _aimAnimationController.dispose();
     _hudAnimationController.dispose();
     super.dispose();
+  }
+
+  void _onControllerChanged() {
+    final currentPlayState = widget.controller.playState;
+    if (_lastPlayState != currentPlayState) {
+      if (currentPlayState == PlayState.victory) {
+        final quest = widget.controller.activeQuest;
+        if (quest != null && quest.type == QuestType.lore) {
+          final postSeq = LoreDialogueConfig.postMissionDialogues[quest.id];
+          if (postSeq == null) {
+            AudioService.instance.playSfx('audio/victory.mp3');
+          }
+        }
+      }
+      _lastPlayState = currentPlayState;
+    }
   }
 
   void _showTooltipAt(int x, int y, Offset localPos) {
@@ -1144,6 +1164,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
         return DialogueOverlay(
           dialogueSequence: postSeq,
           onComplete: () {
+            AudioService.instance.playSfx('audio/victory.mp3');
             setState(() {
               _hasShownPostMissionDialogue = true;
             });

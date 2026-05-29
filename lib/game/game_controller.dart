@@ -464,7 +464,9 @@ class GameController extends ChangeNotifier {
     if (traceResult != null) {
       if (traceResult!.success) {
         playState = PlayState.victory;
-        AudioService.instance.playSfx('audio/victory.mp3');
+        if (activeQuest == null || activeQuest!.type != QuestType.lore) {
+          AudioService.instance.playSfx('audio/victory.mp3');
+        }
         
         if (activeQuest != null) {
           // Consume the placed market devices from permanent inventory
