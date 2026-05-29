@@ -53,7 +53,8 @@ Players are equipped with high-tech tactical modules to steer and manipulate the
 *   **Design Use**: Used to traverse large asteroid obstacles or cross extreme distances instantly.
 
 ### 3.5 Floating Deflection Asteroids (Volcanic Space Rocks)
-*   **Function**: A beatable, single-use asteroid that intercepts the laser and deflects its direction relative to the asteroid's placed angle of rotation ($R = I + \theta_{\text{asteroid}}$).
+*   **Function**: A beatable, single-use preset block that intercepts the laser and deflects its direction relative to the asteroid's angle of rotation ($R = I + \theta_{\text{asteroid}}$).
+*   **Not Purchasable**: This block is a pre-placed, level-specific obstacle and is not a purchasable or researchable inventory device.
 *   **Shatter Physics**: On laser impact, the asteroid detonates immediately (registering an organic dust debris cloud explosion) and is deactivated, preventing infinite laser loops.
 *   **Design Use**: Vital in outer-rim high-density fields to steer the laser around static obsidian barriers and redirect it onto hidden planets.
 
@@ -239,6 +240,7 @@ An immersive, premium soundscape wraps the tactical experience of *Star Destroye
 ### 8.1 Adaptive Soundtrack (BGM — Looping Tracks)
 *   **Command Bridge Theme (`bridge_music.mp3`)**: A deep, atmospheric cosmic synthesizer pad playing looping space ambient background music in the main strategic bridge.
 *   **Space Battle Theme (`battle_music.mp3`)**: An energetic, fast-tempo retro cyberpunk synth-wave track playing continuously during active tactical level simulation.
+*   **Continuous Seamless Playback**: Looping BGM tracks are managed statefully. When re-entering a screen, the active track is maintained and does not restart from the beginning if it is already playing, preserving audio continuity.
 
 ### 8.2 Kinetic Propagation Sound Effects (SFX — Polyphonic Clips)
 Sound effects trigger dynamically in real-time corresponding to tactical events and physics interactions:

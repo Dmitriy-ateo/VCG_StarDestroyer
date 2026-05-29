@@ -333,6 +333,26 @@ class _CommandBridgeScreenState extends State<CommandBridgeScreen> with SingleTi
                           "Spend Research Points (RP) in the Research Lab to upgrade Reflectors, Splitters, Gravity Wells, Portals, and Volatile Bombs. "
                           "Blueprints progress from Rank F to SSS, with star sub-tiers (F -> F* -> F** -> F*** -> E). Each sub-tier unlocks massive physics boosts!"
                         ),
+                        const SizedBox(height: 16),
+                        _buildSectionHeader("6. TACTICAL CONTROLS & RADIAL HUD"),
+                        _buildSectionText(
+                          "Calibrate your simulation board with swift, responsive controls:\n"
+                          "• ↺ Single-Tap: Instantly rotates any placed deflector or splitter clockwise.\n"
+                          "• 🛠️ Long-Press (350ms): Triggers a lock-on target HUD overlay with glowing ROTATE and RECLAIM options."
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSectionHeader("7. SEAMLESS AUDIO COMMAND DECK"),
+                        _buildSectionText(
+                          "Configure music/sfx in the top header Settings panel. BGM tracks (atmospheric bridge ambient or active cyberpunk puzzle synthwave) transition dynamically "
+                          "and loop continuously without restart glitches when navigating map screens."
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSectionHeader("8. PRE-PLACED FIELD ASTEROIDS"),
+                        _buildSectionText(
+                          "Advanced space fields spawn Floating Deflection Asteroids pre-placed on the grid. "
+                          "These are preset volcanic obstacles, not purchasable inventory. "
+                          "They shatter on superlaser hit, deflecting the beam's trajectory precisely relative to their rotation angle."
+                        ),
                       ],
                     ),
                   ),
