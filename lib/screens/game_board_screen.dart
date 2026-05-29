@@ -799,10 +799,53 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
             // List of available blueprints
             Expanded(
               child: groupKeys.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "ALL BLUEPRINTS PLACED",
-                        style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold),
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "ALL BLUEPRINTS PLACED",
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 38,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                setState(() {
+                                  _isInventoryOpen = false;
+                                });
+                                widget.onGoToShop();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00ADB5).withOpacity(0.1),
+                                side: const BorderSide(color: Color(0xFF00ADB5), width: 1.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
+                              ),
+                              icon: const Icon(Icons.storefront, color: Color(0xFF00FFF5), size: 16),
+                              label: const Text(
+                                "GO TO MARKET",
+                                style: TextStyle(
+                                  color: Color(0xFF00FFF5),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
@@ -999,7 +1042,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
                       ),
               ),
             ),
-            if (isEditing && widget.controller.inventory.isNotEmpty) ...[
+            if (isEditing) ...[
               const SizedBox(width: 12),
               _buildBottomToolboxButton(),
             ],
