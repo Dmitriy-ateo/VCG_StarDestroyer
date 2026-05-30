@@ -66,9 +66,11 @@
     /* Core responsive layout constraints for both Loader and Flutter Canvas */
     #loading-container, flutter-view {
       position: absolute !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin: auto !important;
       box-sizing: border-box;
       transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
