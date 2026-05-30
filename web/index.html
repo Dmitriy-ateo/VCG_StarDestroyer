@@ -1,34 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Star Destroyer: Single Shot — A premium tactical spatial puzzle game. Upgrade your laser intensity, aims, and chassis capacity to calibrate beams, bypass defense matrices, and vaporize targeted planets!">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Star Destroyer">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Star Destroyer: Single Shot</title>
+  <link rel="manifest" href="manifest.json">
+
   <script>
+    // Client Context Detection
     (function() {
-      // Dynamic client check to determine if we wrap in desktop frame or boot directly
       const isMobile = window.innerWidth <= 480 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const isInsideIframe = window.self !== window.top || window.location.search.includes('iframe=true');
 
       if (!isMobile && !isInsideIframe) {
-        // Desktop Browser: Intercept, write premium arcade frame wrapper, and halt parent boot
-        document.open();
-        document.write(`
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Star Destroyer: Single Shot</title>
-  <meta name="description" content="Star Destroyer: Single Shot — A premium tactical spatial puzzle game. Upgrade your laser intensity, aims, and chassis capacity to calibrate beams, bypass defense matrices, and vaporize targeted planets!">
+        document.documentElement.classList.add('desktop-host');
+        // Set the iframe src dynamically when the DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+          const iframe = document.getElementById('game-iframe');
+          if (iframe) {
+            // Append iframe parameter to let the child know it runs inside the cabinet
+            iframe.src = window.location.pathname + '?iframe=true' + window.location.hash;
+          }
+        });
+      } else {
+        document.documentElement.classList.add('game-host');
+      }
+    })();
+  </script>
+
   <style>
+    /* ------------------ COMMON STYLES ------------------ */
     body {
-      background-color: #05050A;
       margin: 0;
       padding: 0;
       overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+
+    /* ------------------ DESKTOP WRAPPER (HOST) STYLES ------------------ */
+    #desktop-wrapper {
+      display: none;
+    }
+
+    .desktop-host body {
+      background-color: #05050A;
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 100vw;
-      height: 100vh;
-      /* Glowing drifting backdrop stars surrounding the arcade cabinet */
+      /* Glowing background stars for the desktop browser backdrop */
       background-image: 
         radial-gradient(1px 1px at 40px 80px, #fff, rgba(0,0,0,0)),
         radial-gradient(1.5px 1.5px at 120px 240px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
@@ -48,6 +82,16 @@
       to { background-position: 600px 600px; }
     }
 
+    .desktop-host #desktop-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .desktop-host #game-container {
+      display: none !important;
+    }
+
     .game-cabinet {
       width: 450px;
       height: 880px;
@@ -61,55 +105,28 @@
       position: relative;
     }
 
-    iframe {
+    .game-cabinet iframe {
       width: 100%;
       height: 100%;
       border: none;
       overflow: hidden;
       display: block;
     }
-  </style>
-</head>
-<body>
-  <div class="game-cabinet">
-    <iframe src="${window.location.pathname}?iframe=true${window.location.hash}"></iframe>
-  </div>
-</body>
-</html>
-        `);
-        document.close();
-        window.stop(); // Halt standard loading immediately
-      }
-    })();
-  </script>
 
-  <base href="$FLUTTER_BASE_HREF">
+    /* ------------------ GAME CLIENT STYLES (INSIDE IFRAME/MOBILE) ------------------ */
+    #game-container {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Star Destroyer: Single Shot — A premium tactical spatial puzzle game. Upgrade your laser intensity, aims, and chassis capacity to calibrate beams, bypass defense matrices, and vaporize targeted planets!">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Star Destroyer">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>Star Destroyer: Single Shot</title>
-  <link rel="manifest" href="manifest.json">
-
-  <style>
-    /* Direct styles for the game view (inside iframe or on native mobile screen) */
-    body {
+    .game-host body {
       background-color: #080710;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      width: 100vw;
-      height: 100vh;
+    }
+
+    .game-host #game-container {
+      display: block;
     }
 
     #loading-container, flutter-view {
@@ -274,17 +291,27 @@
   </style>
 </head>
 <body>
-  <div id="loading-container">
-    <div class="space-stars"></div>
-    <div class="loader-content">
-      <h1 class="game-title">STAR DESTROYER</h1>
-      <div class="laser-emitter">
-        <div class="laser-core"></div>
-        <div class="laser-ring"></div>
-      </div>
-      <div class="loading-status">
-        <span class="status-text">CALIBRATING TACTICAL SYSTEMS</span>
-        <span class="dots"></span>
+  <!-- Desktop Bezel Wrapper (Only visible on desktop at top-level) -->
+  <div id="desktop-wrapper">
+    <div class="game-cabinet">
+      <iframe id="game-iframe"></iframe>
+    </div>
+  </div>
+
+  <!-- Game Container (Visible inside iframe or on native mobile screen) -->
+  <div id="game-container">
+    <div id="loading-container">
+      <div class="space-stars"></div>
+      <div class="loader-content">
+        <h1 class="game-title">STAR DESTROYER</h1>
+        <div class="laser-emitter">
+          <div class="laser-core"></div>
+          <div class="laser-ring"></div>
+        </div>
+        <div class="loading-status">
+          <span class="status-text">CALIBRATING TACTICAL SYSTEMS</span>
+          <span class="dots"></span>
+        </div>
       </div>
     </div>
   </div>
@@ -292,6 +319,9 @@
   <script>
     // MutationObserver to detect when Flutter mounts the canvas or view
     (function() {
+      // Execute loader hide checks only in game-host context
+      if (!document.documentElement.classList.contains('game-host')) return;
+
       const initialCheck = document.querySelector('flutter-view, canvas');
       if (initialCheck) {
         const loader = document.getElementById('loading-container');
@@ -320,6 +350,17 @@
     })();
   </script>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Dynamic Bootloader Script -->
+  <script>
+    (function() {
+      // Boot Flutter engine ONLY in a game context
+      if (document.documentElement.classList.contains('game-host')) {
+        const script = document.createElement('script');
+        script.src = 'flutter_bootstrap.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    })();
+  </script>
 </body>
 </html>
