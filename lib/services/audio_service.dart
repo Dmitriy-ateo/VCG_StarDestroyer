@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AudioService {
   AudioService._privateConstructor() {
     // Automatically detect unit test environment to safely bypass native player initialization
-    _isTestEnv = Platform.environment.containsKey('FLUTTER_TEST');
+    _isTestEnv = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
     if (_isTestEnv) {
       debugPrint("AudioService: Test environment detected. Native players disabled.");
     }
