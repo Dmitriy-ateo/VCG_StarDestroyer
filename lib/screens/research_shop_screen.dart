@@ -190,7 +190,7 @@ class ResearchShopScreen extends StatelessWidget {
                                 _buildUpgradeCard(
                                   context: context,
                                   title: "Deflector Sub-Chassis",
-                                  description: "Increases structural load capacity allowing more reflectors to be loaded simultaneously.",
+                                  description: "Increases structural load capacity allowing more tactical devices to be loaded simultaneously.",
                                   icon: Icons.layers,
                                   upgradeType: "chassis",
                                   color: Colors.amberAccent,

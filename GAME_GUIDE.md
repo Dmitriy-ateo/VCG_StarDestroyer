@@ -176,7 +176,7 @@ Daily and procedural side quests dynamically scale their complexity based on the
 
 ### 5.2 R&D Sub-Systems Chassis Upgrades (Credits)
 
-Sub-systems (Laser Intensity, Tactical Aiming Computer, Deflector Sub-Chassis Capacity) are upgraded in the R&D Shop using **Credits (C)**. 
+Sub-systems (Laser Intensity, Tactical Aiming Computer, Deflector Sub-Chassis Device Capacity) are upgraded in the R&D Shop using **Credits (C)**. 
 
 *   **Progression Path**: Upgrades climb through ranks `F -> E -> D -> C -> B -> A -> S -> SS -> SSS`. Each rank features 3 Star tiers (`0` to `3` stars), with 5 sub-levels per star. Completing Level 5 wraps to the next star tier, and completing 3-Stars wraps to the next rank (Level 1, 0-Stars).
 *   **Geometric Cost Curve**: To act as a significant late-game currency sink while keeping initial upgrades highly accessible, cost scales geometrically:
