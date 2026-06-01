@@ -163,13 +163,13 @@ void main() {
       // Galaxy 3 requires:
       // Laser Intensity Rank F ★★ (stars >= 2)
       // Aiming Computer Rank F ★ (stars >= 1)
-      // Unlocked blueprint 'portal'
+      // Unlocked blueprint 'splitter'
       // Completed galaxy_2
       expect(g3.checkUnlockStatus(progression), isFalse);
 
       progression.chassisStars['intensity'] = 2; // Rank F ★★
       progression.chassisStars['aiming'] = 1; // Rank F ★
-      progression.unlockedDevices.add(DeviceType.portal); // Researched portals
+      progression.unlockedDevices.add(DeviceType.splitter); // Researched splitters
       progression.completedGalaxyIds.add('galaxy_2'); // Completed galaxy_2
 
       expect(g3.checkUnlockStatus(progression), isTrue);
@@ -177,14 +177,14 @@ void main() {
       // Galaxy 4 requires:
       // Laser Intensity Rank F ★★★ (stars >= 3)
       // Aiming Computer Rank F ★★ (stars >= 2)
-      // Unlocked blueprint 'gravityWell'
+      // Unlocked blueprint 'bomb'
       // Completed galaxy_3
       final g4 = preloadedGalaxies.firstWhere((g) => g.id == 'galaxy_4');
       expect(g4.checkUnlockStatus(progression), isFalse);
 
       progression.chassisStars['intensity'] = 3; // Rank F ★★★
       progression.chassisStars['aiming'] = 2; // Rank F ★★
-      progression.unlockedDevices.add(DeviceType.gravityWell); // Researched gravity wells
+      progression.unlockedDevices.add(DeviceType.bomb); // Researched bombs
       progression.completedGalaxyIds.add('galaxy_3'); // Completed galaxy_3
 
       expect(g4.checkUnlockStatus(progression), isTrue);
@@ -192,21 +192,21 @@ void main() {
       // Galaxy 5 requires:
       // Laser Intensity Rank F ★★★★ (stars >= 4)
       // Aiming Computer Rank F ★★★ (stars >= 3)
-      // Unlocked blueprint 'bomb'
+      // Unlocked blueprint 'gravityWell'
       // Completed galaxy_4
       final g5 = preloadedGalaxies.firstWhere((g) => g.id == 'galaxy_5');
       expect(g5.checkUnlockStatus(progression), isFalse);
 
       progression.chassisStars['intensity'] = 4; // Rank F ★★★★
       progression.chassisStars['aiming'] = 3; // Rank F ★★★
-      progression.unlockedDevices.add(DeviceType.bomb); // Researched bombs
+      progression.unlockedDevices.add(DeviceType.gravityWell); // Researched gravity wells
       progression.completedGalaxyIds.add('galaxy_4'); // Completed galaxy_4
       expect(g5.checkUnlockStatus(progression), isTrue);
 
       // Galaxy 6 requires:
       // Laser Intensity Rank E (Rank E, stars >= 0)
       // Aiming Computer Rank F ★★★★ (stars >= 4)
-      // Unlocked blueprint 'splitter'
+      // Unlocked blueprint 'portal'
       // Completed galaxy_5
       final g6 = preloadedGalaxies.firstWhere((g) => g.id == 'galaxy_6');
       expect(g6.checkUnlockStatus(progression), isFalse);
@@ -214,7 +214,7 @@ void main() {
       progression.chassisRanks['intensity'] = 'E';
       progression.chassisStars['intensity'] = 0; // Cumulative Laser Intensity Score 4 (E rank maps to 4)
       progression.chassisStars['aiming'] = 4; // Rank F ★★★★
-      progression.unlockedDevices.add(DeviceType.splitter); // Researched splitters
+      progression.unlockedDevices.add(DeviceType.portal); // Researched portals
       progression.completedGalaxyIds.add('galaxy_5'); // Completed galaxy_5
       expect(g6.checkUnlockStatus(progression), isTrue);
     });

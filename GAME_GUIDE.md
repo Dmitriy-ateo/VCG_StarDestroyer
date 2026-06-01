@@ -133,7 +133,7 @@ graph TD
     - Clearance of Galaxy 2.
     - **Laser Intensity Rank F ★★+** (Star Rating $\ge 2$).
     - **Aiming Computer Rank F ★+** (Star Rating $\ge 1$).
-    - Researched Portal Blueprints.
+    - Researched Splitter Blueprints.
 *   **Available Inventory**: Full tactical inventory (Portals, Gravity Wells, Splitters, Bombs, Reflectors).
 *   **Level-Dependent Balance Mechanics**:
     - *Einstein-Rosen Portals*: Unstable Level 1 portals drain 1 laser power during wormhole transit. Upgrading to Level 2+ stabilizes the warp gate for lossless transit.

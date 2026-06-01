@@ -255,12 +255,12 @@ const String campaignJsonConfig = r'''
     "id": "galaxy_3",
     "name": "Outer Horizon",
     "description": "Distended outer space sectors connected through spatial portals.",
-    "requirementDescription": "Requires Laser Intensity Rank F ★★+, Aiming Computer Rank F ★+, and Researched Portals.",
+    "requirementDescription": "Requires Laser Intensity Rank F ★★+, Aiming Computer Rank F ★+, and Researched Splitters.",
     "minLaserIntensityRank": "F",
     "minLaserIntensityStars": 2,
     "minAimingComputerRank": "F",
     "minAimingComputerStars": 1,
-    "requiredUnlockedBlueprints": ["portal"],
+    "requiredUnlockedBlueprints": ["splitter"],
     "prerequisiteGalaxyIds": ["galaxy_2"],
     "quests": [
       {
@@ -321,12 +321,12 @@ const String campaignJsonConfig = r'''
     "id": "galaxy_4",
     "name": "Void Terminus",
     "description": "The absolute edge of known space, dominated by a supermassive black hole. Deploy gravity wells and singular portal connections to navigate crushing gravitational distortions.",
-    "requirementDescription": "Requires Laser Intensity Rank F ★★★+, Aiming Computer Rank F ★★+, and Researched Gravity Wells.",
+    "requirementDescription": "Requires Laser Intensity Rank F ★★★+, Aiming Computer Rank F ★★+, and Researched Bombs.",
     "minLaserIntensityRank": "F",
     "minLaserIntensityStars": 3,
     "minAimingComputerRank": "F",
     "minAimingComputerStars": 2,
-    "requiredUnlockedBlueprints": ["gravityWell"],
+    "requiredUnlockedBlueprints": ["bomb"],
     "prerequisiteGalaxyIds": ["galaxy_3"],
     "quests": [
       {
@@ -376,12 +376,12 @@ const String campaignJsonConfig = r'''
     "id": "galaxy_5",
     "name": "Obsidian Core",
     "description": "Unstable spatial anomaly surrounded by dark-matter crystalline asteroid fields. Chain explosive reactions are necessary to shatter core security gates.",
-    "requirementDescription": "Requires Laser Intensity Rank F ★★★★+, Aiming Computer Rank F ★★★+, and Researched Bombs.",
+    "requirementDescription": "Requires Laser Intensity Rank F ★★★★+, Aiming Computer Rank F ★★★+, and Researched Gravity Wells.",
     "minLaserIntensityRank": "F",
     "minLaserIntensityStars": 4,
     "minAimingComputerRank": "F",
     "minAimingComputerStars": 3,
-    "requiredUnlockedBlueprints": ["bomb"],
+    "requiredUnlockedBlueprints": ["gravityWell"],
     "prerequisiteGalaxyIds": ["galaxy_4"],
     "quests": [
       {
@@ -437,12 +437,12 @@ const String campaignJsonConfig = r'''
     "id": "galaxy_6",
     "name": "Chronos Rift",
     "description": "The final stronghold of Grand Moff Vance. Folding spatial dimensions and gravity fields converge. Integrate every device in your arsenal to shatter the central nexus.",
-    "requirementDescription": "Requires Laser Intensity Rank E+, Aiming Computer Rank F ★★★★+, and Researched Splitters.",
+    "requirementDescription": "Requires Laser Intensity Rank E+, Aiming Computer Rank F ★★★★+, and Researched Portals.",
     "minLaserIntensityRank": "E",
     "minLaserIntensityStars": 0,
     "minAimingComputerRank": "F",
     "minAimingComputerStars": 4,
-    "requiredUnlockedBlueprints": ["splitter"],
+    "requiredUnlockedBlueprints": ["portal"],
     "prerequisiteGalaxyIds": ["galaxy_5"],
     "quests": [
       {
