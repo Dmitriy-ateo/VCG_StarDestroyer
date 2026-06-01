@@ -44,6 +44,7 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
   // Cyberpunk Dialogue System State
   bool _isDialogueOverlayVisible = false;
   bool _hasShownPostMissionDialogue = false;
+  bool _hasShownBlueprintUnlock = false;
   List<DialogueNode>? _dialogueSequence;
   VoidCallback? _onDialogueComplete;
   PlayState? _lastPlayState;
@@ -1217,6 +1218,12 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
       }
     }
 
+    // Intercept victory to show blueprint unlock overlay
+    final needsBlueprint = quest != null && (quest.id == 'q3' || quest.id == 'q5' || quest.id == 'q6' || quest.id == 'q7' || quest.id == 'q8' || quest.id == 'q9');
+    if (isWin && needsBlueprint && !_hasShownBlueprintUnlock) {
+      return _buildBlueprintUnlockOverlay(quest.id);
+    }
+
     return Container(
       color: Colors.black.withOpacity(0.85),
       child: Center(
@@ -1519,6 +1526,189 @@ class _GameBoardScreenState extends State<GameBoardScreen> with TickerProviderSt
           ],
         );
       },
+    );
+  }
+
+  Widget _buildBlueprintUnlockOverlay(String questId) {
+    String title = "";
+    IconData icon = Icons.biotech;
+    String subtitle = "";
+    String spec = "";
+    Color glowColor = const Color(0xFF00FFF5);
+    
+    if (questId == 'q3') {
+      title = "PRISM LASER SPLITTER (180°)";
+      icon = Icons.call_split;
+      subtitle = "Base Bifurcation Prismatic Core";
+      spec = "Decrypted Imperial blueprint. Splits a single high-charge laser beam into two directly opposite (180°) vectors. Enables simultaneous targeting of opposing sectors.";
+      glowColor = const Color(0xFFFF2E93);
+    } else if (questId == 'q5') {
+      title = "SPLITTER CORONA & TARGET MATRIX";
+      icon = Icons.radar;
+      subtitle = "Diagonals (45°, 90°, 135°) & Aiming Computer";
+      spec = "Decrypted tactical data packages. Allows beam splitting at custom diagonal vectors to bypass asteroid slipways. Unlocks the Tactical Aiming Computer on the weapons bridge console.";
+      glowColor = const Color(0xFF00FFF5);
+    } else if (questId == 'q6') {
+      title = "ANTI-MATTER PROXIMITY BOMB";
+      icon = Icons.brightness_low;
+      subtitle = "Tactical Detonation Core";
+      spec = "Decrypted volatile technology. Deployable explosive cores that react violently to superlaser charge spikes. Detonation shatters heavy armored planet shield casings within a 2.2-unit radius.";
+      glowColor = const Color(0xFFFF3333);
+    } else if (questId == 'q7') {
+      title = "SINGULARITY GRAVITY WELL";
+      icon = Icons.blur_circular;
+      subtitle = "Micro-Black Hole Emitter";
+      spec = "Decrypted high-gravity blueprints. Projects micro-singularities that continuously pull and warp passing superlaser rays. Crucial for curving fire around impenetrable planetary screens.";
+      glowColor = const Color(0xFF7B2CBF);
+    } else if (questId == 'q8') {
+      title = "COSMIC WARP PORTALS";
+      icon = Icons.circle_outlined;
+      subtitle = "Einstein-Rosen Spatial Bridge Pair";
+      spec = "Decrypted spatial transport diagrams. Links two grid positions to warp superlasers across dimensions with zero beam attenuation. Enables traversal of solid asteroid walls.";
+      glowColor = const Color(0xFFFF9F1C);
+    } else if (questId == 'q9') {
+      title = "FLOATING ASTEROID DEFLECTORS";
+      icon = Icons.filter_hdr_outlined;
+      subtitle = "Mobile Organic Prism Deflectors";
+      spec = "Decrypted space-harnessing algorithms. Harness organic belt minerals to deploy floating space rock refractors. Drifting structures deflect superlaser rays upon impact.";
+      glowColor = const Color(0xFF69F0AE);
+    }
+
+    return Container(
+      color: Colors.black.withOpacity(0.92),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          constraints: const BoxConstraints(maxWidth: 360),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: glowColor, width: 2.0),
+            boxShadow: [
+              BoxShadow(
+                color: glowColor.withOpacity(0.2),
+                blurRadius: 30,
+                spreadRadius: 3,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: glowColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: glowColor.withOpacity(0.4), width: 1),
+                ),
+                child: Text(
+                  "🔓 LORE BLUEPRINT DECRYPTED 🔓",
+                  style: TextStyle(
+                    color: glowColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Animated Wireframe Hologram representation
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D1117),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: glowColor.withOpacity(0.3), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: glowColor.withOpacity(0.06),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    )
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 44, color: glowColor),
+              ),
+              const SizedBox(height: 20),
+              
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle.toUpperCase(),
+                style: TextStyle(
+                  color: glowColor,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                  letterSpacing: 0.8,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D1117),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF30363D), width: 1),
+                ),
+                child: Text(
+                  spec,
+                  style: const TextStyle(
+                    color: Color(0xFF8B949E),
+                    fontSize: 11,
+                    height: 1.45,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.heavyImpact();
+                    AudioService.instance.playSfx('audio/upgrade.mp3');
+                    setState(() {
+                      _hasShownBlueprintUnlock = true;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: glowColor.withOpacity(0.15),
+                    foregroundColor: glowColor,
+                    side: BorderSide(color: glowColor, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    "INTEGRATE TO DATABASE",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

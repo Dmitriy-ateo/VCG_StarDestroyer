@@ -98,7 +98,7 @@ const String campaignJsonConfig = r'''
         "id": "q3",
         "title": "The Kuat Triple-Split",
         "description": "Escaping rebel convoy fleets are scattered in three directions. Combine a 180° splitter and a 90° splitter to coordinate a triple strike.",
-        "type": "side",
+        "type": "lore",
         "storyLoreSnippet": "Admiral, multiple rebel escorts are executing an emergency jump. Standard lasers can only track one target. Mount a 180° Splitter at (3, 8) and a 90° Splitter at (5, 8) to bifurcate and redirect the beam to hit all three escaping hulls simultaneously!",
         "creditsReward": 250,
         "rpReward": 50,

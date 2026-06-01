@@ -36,6 +36,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.flip,
               glowColor: const Color(0xFF00FFF5),
               isResearched: progression.unlockedDevices.contains(DeviceType.reflector),
+              isVisible: progression.isDeviceRecipeUnlocked(DeviceType.reflector),
             ),
             _MarketItemData(
               itemId: "splitter_180",
@@ -45,6 +46,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.call_split,
               glowColor: const Color(0xFFFF2E93),
               isResearched: progression.unlockedSplitterAngles.contains(180.0),
+              isVisible: progression.isSplitterAngleUnlocked(180.0),
             ),
             _MarketItemData(
               itemId: "splitter_90",
@@ -54,6 +56,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.call_split,
               glowColor: const Color(0xFFFF2E93),
               isResearched: progression.unlockedSplitterAngles.contains(90.0),
+              isVisible: progression.isSplitterAngleUnlocked(90.0),
             ),
             _MarketItemData(
               itemId: "splitter_135",
@@ -63,6 +66,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.call_split,
               glowColor: const Color(0xFFFF2E93),
               isResearched: progression.unlockedSplitterAngles.contains(135.0),
+              isVisible: progression.isSplitterAngleUnlocked(135.0),
             ),
             _MarketItemData(
               itemId: "splitter_45",
@@ -72,6 +76,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.call_split,
               glowColor: const Color(0xFFFF2E93),
               isResearched: progression.unlockedSplitterAngles.contains(45.0),
+              isVisible: progression.isSplitterAngleUnlocked(45.0),
             ),
             _MarketItemData(
               itemId: "bomb",
@@ -81,6 +86,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.brightness_low,
               glowColor: const Color(0xFFFF3333),
               isResearched: progression.unlockedDevices.contains(DeviceType.bomb),
+              isVisible: progression.isDeviceRecipeUnlocked(DeviceType.bomb),
             ),
             _MarketItemData(
               itemId: "gravityWell",
@@ -90,6 +96,7 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.blur_circular,
               glowColor: const Color(0xFF7B2CBF),
               isResearched: progression.unlockedDevices.contains(DeviceType.gravityWell),
+              isVisible: progression.isDeviceRecipeUnlocked(DeviceType.gravityWell),
             ),
             _MarketItemData(
               itemId: "portal",
@@ -99,8 +106,9 @@ class MarketScreen extends StatelessWidget {
               icon: Icons.circle_outlined,
               glowColor: const Color(0xFFFF9F1C),
               isResearched: progression.unlockedDevices.contains(DeviceType.portal),
+              isVisible: progression.isDeviceRecipeUnlocked(DeviceType.portal),
             ),
-          ];
+          ].where((item) => item.isVisible).toList();
 
           return SafeArea(
             child: Padding(
@@ -468,6 +476,7 @@ class _MarketItemData {
   final IconData icon;
   final Color glowColor;
   final bool isResearched;
+  final bool isVisible;
 
   const _MarketItemData({
     required this.itemId,
@@ -477,5 +486,6 @@ class _MarketItemData {
     required this.icon,
     required this.glowColor,
     required this.isResearched,
+    required this.isVisible,
   });
 }

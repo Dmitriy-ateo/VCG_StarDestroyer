@@ -59,7 +59,80 @@ class SectorGenerator {
         break;
     }
 
-    _enforceNoDirectHitForAdvancedGalaxies(level, galaxyId);
+    // 1. Planet Count Adjustments (G1: 1, G2: 1-2, G3-4: 2-4, G5-7: 3-5)
+    int targetPlanetsCount = 1;
+    if (galaxyNum == 2) {
+      targetPlanetsCount = 1 + _random.nextInt(2); // 1 or 2
+    } else if (galaxyNum == 3 || galaxyNum == 4) {
+      targetPlanetsCount = 2 + _random.nextInt(3); // 2 to 4
+    } else if (galaxyNum >= 5) {
+      targetPlanetsCount = 3 + _random.nextInt(3); // 3 to 5
+    }
+
+    if (level.planets.length > targetPlanetsCount) {
+      level.planets.removeRange(targetPlanetsCount, level.planets.length);
+    } else {
+      int attempts = 0;
+      while (level.planets.length < targetPlanetsCount && attempts < 100) {
+        attempts++;
+        int px = _random.nextInt(8);
+        int py = 1 + _random.nextInt(4); // Keep in top half
+        bool collision = (px == level.deathStarX && py == level.deathStarY) || 
+                         level.planets.any((p) => p.gridX == px && p.gridY == py) ||
+                         level.walls.any((w) => w.gridX == px && w.gridY == py);
+        if (!collision) {
+          level.planets.add(PlanetTarget(
+            id: "extra_p_${level.planets.length}",
+            gridX: px,
+            gridY: py,
+            radius: 20.0,
+            name: _getRandomPlanetName(),
+            color: Color(int.parse(_getRandomPlanetColor())),
+            requiredLaserPower: galaxyNum > 2 ? galaxyNum : null,
+          ));
+        }
+      }
+    }
+
+    // 2. Shield Post-Processing: Force no planet shields and no breakable walls for Galaxy 1 & 2
+    if (galaxyNum <= 2) {
+      for (int i = 0; i < level.planets.length; i++) {
+        level.planets[i] = level.planets[i].copyWith(requiredLaserPower: null);
+      }
+      for (int i = 0; i < level.walls.length; i++) {
+        if (level.walls[i].type == 'energyShield' || 
+            level.walls[i].type == 'crystal' || 
+            level.walls[i].type == 'spaceLitter' || 
+            level.walls[i].type == 'scrapMetal') {
+          level.walls[i] = WallBlock(
+            gridX: level.walls[i].gridX,
+            gridY: level.walls[i].gridY,
+            isDestructible: false,
+            type: 'asteroid',
+          );
+        }
+      }
+    }
+
+    // 3. Direct Hits Enforcement (G1: 70%, G2: 12%, G3+: 0%)
+    final roll = _random.nextDouble();
+    bool shouldEnforceBlockage = true;
+    if (galaxyNum == 1) {
+      if (roll < 0.70) {
+        shouldEnforceBlockage = false; // 70% direct hits in Galaxy 1
+      }
+    } else if (galaxyNum == 2) {
+      if (roll < 0.12) {
+        shouldEnforceBlockage = false; // 12% direct hits in Galaxy 2
+      }
+    }
+
+    if (shouldEnforceBlockage) {
+      _enforceNoDirectHitForAdvancedGalaxies(level, galaxyId);
+    } else {
+      _clearDirectHitPath(level);
+    }
+
     return level;
   }
 
@@ -890,5 +963,39 @@ class SectorGenerator {
         }
       }
     }
+  }
+
+  // Clear any walls standing in the direct path from emitter to planets
+  static void _clearDirectHitPath(LevelData level) {
+    final Set<String> cellsToClear = {};
+    for (var planet in level.planets) {
+      final startX = level.deathStarX + 0.5;
+      final startY = level.deathStarY + 0.5;
+      final targetX = planet.gridX + 0.5;
+      final targetY = planet.gridY + 0.5;
+
+      final dx = targetX - startX;
+      final dy = targetY - startY;
+      final distance = sqrt(dx * dx + dy * dy);
+      
+      if (distance == 0) continue;
+
+      final stepX = dx / distance;
+      final stepY = dy / distance;
+
+      final steps = (distance * 10).toInt();
+      for (int i = 1; i < steps; i++) {
+        final currentX = startX + stepX * (i * 0.1);
+        final currentY = startY + stepY * (i * 0.1);
+
+        final cellX = currentX.floor();
+        final cellY = currentY.floor();
+
+        if (cellX == planet.gridX && cellY == planet.gridY) break;
+        cellsToClear.add("$cellX,$cellY");
+      }
+    }
+    
+    level.walls.removeWhere((w) => cellsToClear.contains("${w.gridX},${w.gridY}"));
   }
 }

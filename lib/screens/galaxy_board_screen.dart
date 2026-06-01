@@ -74,6 +74,12 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
   // Initialize and refresh today's Daily Hard Quest
   void _initializeDailyHardQuest(GameProgression progression) {
+    if (widget.galaxyId == 'galaxy_1' || widget.galaxyId == 'galaxy_2') {
+      _sessionDailyHardQuestMap ??= {};
+      _sessionDailyHardQuestMap![widget.galaxyId] = null;
+      return;
+    }
+
     final today = progression.dailyHardDateStr;
     _sessionDailyHardQuestMap ??= {};
     _sessionDailyHardDateStrMap ??= {};
@@ -111,7 +117,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     }
   }
 
-  // Initialize and refresh daily quests list
+  // Initialize and refresh daily quests list dynamically refilling up to 2 (G1/G2) or 3 (G3+) active targets
   void _initializeSessionDailyQuests(GameProgression progression) {
     _sessionDailyQuestsMap ??= {};
 
@@ -120,9 +126,11 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       return;
     }
 
+    final maxDailyOnMap = (widget.galaxyId == 'galaxy_1' || widget.galaxyId == 'galaxy_2') ? 2 : 3;
+
     if (_sessionDailyQuestsMap![widget.galaxyId] == null) {
       _sessionDailyQuestsMap![widget.galaxyId] = [];
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < maxDailyOnMap; i++) {
         _sessionDailyQuestsMap![widget.galaxyId]!.add(_generateUniqueDailyQuest(progression));
       }
     } else {
@@ -140,7 +148,7 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
 
       // Spawning new daily sectors up to a maximum limit of 10 completions per session
       if (_completedDailyCount < 10) {
-        final int maxToGenerate = 3 - _sessionDailyQuestsMap![widget.galaxyId]!.length;
+        final int maxToGenerate = maxDailyOnMap - _sessionDailyQuestsMap![widget.galaxyId]!.length;
         for (int i = 0; i < maxToGenerate; i++) {
           if (_completedDailyCount + _sessionDailyQuestsMap![widget.galaxyId]!.length < 10) {
             _sessionDailyQuestsMap![widget.galaxyId]!.add(_generateUniqueDailyQuest(progression));
@@ -166,19 +174,21 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
     );
   }
 
-  // Initialize and refresh side quests list dynamically refilling up to 7 active targets
+  // Initialize and refresh side quests list dynamically refilling up to 3 (G1/G2) or 7 (G3+) active targets
   void _initializeSessionSideQuests(GalaxyModel galaxy, GameProgression progression) {
     _sessionSideQuestsMap ??= {};
+
+    final maxSideOnMap = (galaxy.id == 'galaxy_1' || galaxy.id == 'galaxy_2') ? 3 : 7;
 
     if (_sessionSideQuestsMap![galaxy.id] == null) {
       // Seed from campaign side quests that are not completed yet
       final galaxySideQuests = galaxy.quests
           .where((q) => q.type == QuestType.side && !progression.completedQuestIds.contains(q.id))
           .toList();
-      _sessionSideQuestsMap![galaxy.id] = galaxySideQuests;
+      _sessionSideQuestsMap![galaxy.id] = galaxySideQuests.take(maxSideOnMap).toList();
 
-      // Refill to 7 active targets if starting with less
-      while (_sessionSideQuestsMap![galaxy.id]!.length < 7) {
+      // Refill to max active targets if starting with less
+      while (_sessionSideQuestsMap![galaxy.id]!.length < maxSideOnMap) {
         _sessionSideQuestsMap![galaxy.id]!.add(_generateUniqueSideQuest(galaxy, progression));
       }
     } else {
@@ -186,8 +196,8 @@ class _GalaxyBoardScreenState extends State<GalaxyBoardScreen> with SingleTicker
       final completedIds = progression.completedQuestIds;
       _sessionSideQuestsMap![galaxy.id]!.removeWhere((q) => completedIds.contains(q.id));
 
-      // Refill back to 7 active targets using procedural side quests
-      while (_sessionSideQuestsMap![galaxy.id]!.length < 7) {
+      // Refill back to max active targets using procedural side quests
+      while (_sessionSideQuestsMap![galaxy.id]!.length < maxSideOnMap) {
         _sessionSideQuestsMap![galaxy.id]!.add(_generateUniqueSideQuest(galaxy, progression));
       }
     }

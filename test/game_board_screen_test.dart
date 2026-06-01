@@ -341,9 +341,10 @@ void main() {
       expect(find.text("RECLAIM"), findsNothing);
     });
 
-    testWidgets('GalaxyBoardScreen initializes and refuels exactly 7 side quests in Galaxy 1', (WidgetTester tester) async {
+    testWidgets('GalaxyBoardScreen initializes and refuels active side quests based on galaxy campaign onboarding specs', (WidgetTester tester) async {
       final controller = GameController();
       
+      // Galaxy 1: Should have exactly 3 active side quests
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -358,8 +359,23 @@ void main() {
           ),
         ),
       );
-      
-      // Verify that exactly 7 active side quest planets are rendered on Orbit 2 (represented by Icons.assignment)
+      expect(find.byIcon(Icons.assignment), findsNWidgets(3));
+
+      // Galaxy 3: Should have exactly 7 active side quests
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: GalaxyBoardScreen(
+              controller: controller,
+              galaxyId: 'galaxy_3',
+              onQuestSelected: (q) {},
+              onBackToMap: () {},
+              onGoToShop: () {},
+              onGoToResearch: () {},
+            ),
+          ),
+        ),
+      );
       expect(find.byIcon(Icons.assignment), findsNWidgets(7));
     });
 

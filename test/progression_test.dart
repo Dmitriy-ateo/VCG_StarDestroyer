@@ -232,12 +232,12 @@ void main() {
       expect(progression.dailyHardGalaxyId, isNull);
       expect(progression.dailyHardQuestId, isNull);
 
-      // Roll over with unlocked galaxies list containing galaxy_1 and galaxy_2
+      // Roll over with unlocked galaxies list containing galaxy_1, galaxy_2, and galaxy_3
       // Reset dailyHardDateStr so rollover triggers again
       progression.dailyHardDateStr = null;
-      progression.checkAndRollOverDailyHard(['galaxy_1', 'galaxy_2']);
-      expect(progression.dailyHardGalaxyId, 'galaxy_2'); // Excludes galaxy_1, picks galaxy_2
-      expect(progression.dailyHardQuestId, contains('daily_hard_quest_galaxy_2_'));
+      progression.checkAndRollOverDailyHard(['galaxy_1', 'galaxy_2', 'galaxy_3']);
+      expect(progression.dailyHardGalaxyId, 'galaxy_3'); // Excludes galaxy_1 & galaxy_2, picks galaxy_3
+      expect(progression.dailyHardQuestId, contains('daily_hard_quest_galaxy_3_'));
       expect(progression.dailyHardCompleted, isFalse);
 
       // Verify sector generation configures rewards, required inventory and isInvader flags correctly
@@ -349,12 +349,14 @@ void main() {
         return true;
       }
 
-      // Test 1: Daily Sector Generation (Galaxy 2 and Galaxy 3)
-      for (int i = 0; i < 20; i++) {
+      // Test 1: Daily Sector Generation (Galaxy 3 is 100% blocked, Galaxy 2 has low direct hits)
+      int g2DirectHits = 0;
+      for (int i = 0; i < 50; i++) {
         final levelG2 = SectorGenerator.generateDailySector(progression, 'galaxy_2');
         for (var planet in levelG2.planets) {
-          expect(isDirectPathUnblocked(levelG2, planet), isFalse, 
-              reason: "Daily Galaxy 2 level ${levelG2.name} allows direct hit on planet ${planet.name} at (${planet.gridX}, ${planet.gridY})!");
+          if (isDirectPathUnblocked(levelG2, planet)) {
+            g2DirectHits++;
+          }
         }
 
         final levelG3 = SectorGenerator.generateDailySector(progression, 'galaxy_3');
@@ -363,6 +365,8 @@ void main() {
               reason: "Daily Galaxy 3 level ${levelG3.name} allows direct hit on planet ${planet.name} at (${planet.gridX}, ${planet.gridY})!");
         }
       }
+      expect(g2DirectHits, lessThan(25), 
+          reason: "Galaxy 2 daily sectors should have low direct hit rates (12% per sector spec, got $g2DirectHits direct hits out of 50 runs)");
 
       // Test 2: Daily Hard Sector Generation (Galaxy 2 and Galaxy 3)
       final hardG2 = SectorGenerator.generateDailyHardSector(progression, 'galaxy_2');
@@ -376,6 +380,52 @@ void main() {
         expect(isDirectPathUnblocked(hardG3, planet), isFalse,
             reason: "Hard Galaxy 3 level allows direct hit on planet ${planet.name}!");
       }
+    });
+
+    test('Progressive Campaign locks and breakthroughs unlock correct recipes', () {
+      final progression = GameProgression();
+
+      // Fresh state: only reflector and intensity unlocked
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.reflector), isTrue);
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.splitter), isFalse);
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.bomb), isFalse);
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.gravityWell), isFalse);
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.portal), isFalse);
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.floatingAsteroid), isFalse);
+
+      expect(progression.isSplitterAngleUnlocked(180.0), isFalse);
+      expect(progression.isSplitterAngleUnlocked(90.0), isFalse);
+
+      expect(progression.isSubsystemUnlocked('intensity'), isTrue);
+      expect(progression.isSubsystemUnlocked('aiming'), isFalse);
+      expect(progression.isSubsystemUnlocked('chassis'), isFalse);
+
+      // Clear Galaxy 1 Lore Quest (q3)
+      progression.completedQuestIds.add('q3');
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.splitter), isTrue);
+      expect(progression.isSplitterAngleUnlocked(180.0), isTrue);
+      expect(progression.isSplitterAngleUnlocked(90.0), isFalse); // Variations still locked
+      expect(progression.isSubsystemUnlocked('chassis'), isTrue); // Deflector chassis unlocked!
+
+      // Clear Galaxy 2 Lore Quest (q5)
+      progression.completedQuestIds.add('q5');
+      expect(progression.isSplitterAngleUnlocked(90.0), isTrue);
+      expect(progression.isSplitterAngleUnlocked(135.0), isTrue);
+      expect(progression.isSplitterAngleUnlocked(45.0), isTrue);
+      expect(progression.isSubsystemUnlocked('aiming'), isTrue); // Aiming computer unlocked!
+
+      // Clear subsequent lore quests
+      progression.completedQuestIds.add('q6'); // Galaxy 3 Lore
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.bomb), isTrue);
+
+      progression.completedQuestIds.add('q7'); // Galaxy 4 Lore
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.gravityWell), isTrue);
+
+      progression.completedQuestIds.add('q8'); // Galaxy 5 Lore
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.portal), isTrue);
+
+      progression.completedQuestIds.add('q9'); // Galaxy 6 Lore
+      expect(progression.isDeviceRecipeUnlocked(DeviceType.floatingAsteroid), isTrue);
     });
   });
 }

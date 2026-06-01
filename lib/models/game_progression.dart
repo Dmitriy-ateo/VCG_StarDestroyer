@@ -340,7 +340,7 @@ class GameProgression {
     if (dailyHardDateStr != today || dailyHardGalaxyId == null || dailyHardQuestId == null) {
       dailyHardCompleted = false;
       dailyHardDateStr = today;
-      final eligible = unlockedGalaxyIds.where((id) => id != 'galaxy_1').toList();
+      final eligible = unlockedGalaxyIds.where((id) => id != 'galaxy_1' && id != 'galaxy_2').toList();
       if (eligible.isNotEmpty) {
         eligible.shuffle(Random());
         dailyHardGalaxyId = eligible.first;
@@ -463,5 +463,45 @@ class GameProgression {
       }
     }
     return completedLevelIds.contains(levelId - 1);
+  }
+
+  // Progressive Campaign Unlocks
+  bool isDeviceRecipeUnlocked(DeviceType type) {
+    switch (type) {
+      case DeviceType.reflector:
+        return true;
+      case DeviceType.splitter:
+        return completedQuestIds.contains('q3');
+      case DeviceType.bomb:
+        return completedQuestIds.contains('q6');
+      case DeviceType.gravityWell:
+        return completedQuestIds.contains('q7');
+      case DeviceType.portal:
+        return completedQuestIds.contains('q8');
+      case DeviceType.floatingAsteroid:
+        return completedQuestIds.contains('q9');
+      default:
+        return false;
+    }
+  }
+
+  bool isSplitterAngleUnlocked(double angle) {
+    if (angle == 180.0) {
+      return completedQuestIds.contains('q3');
+    } else if (angle == 90.0 || angle == 135.0 || angle == 45.0) {
+      return completedQuestIds.contains('q5');
+    }
+    return false;
+  }
+
+  bool isSubsystemUnlocked(String upgradeType) {
+    if (upgradeType == 'intensity') {
+      return true;
+    } else if (upgradeType == 'aiming') {
+      return completedQuestIds.contains('q5');
+    } else if (upgradeType == 'chassis') {
+      return completedQuestIds.contains('q3');
+    }
+    return false;
   }
 }

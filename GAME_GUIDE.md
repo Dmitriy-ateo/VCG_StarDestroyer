@@ -146,30 +146,35 @@ graph TD
     - **Laser Intensity Rank F ★★+** (Star Rating $\ge 2$).
 *   **Available Inventory**: Floating Deflection Asteroids, Prism Splitters, Reflectors.
 
-#### 5.1.1 Daily Hard Softlock Protection Rule
-When the global **Daily Hard** threat modifier is active, standard sectors in advanced galaxies undergo structural threat hardening, adding defensive shields to targets and placing extra obsidian obstructions.
-*   **The Risk**: New recruits begin their career with exactly $0$ Credits, $0$ RP, and standard Level 1 lasers. If their introductory levels were subject to Daily Hard boosts, they would face shielded planets requiring Level 2+ lasers. Because they cannot destroy any planets, they would be unable to earn credits to buy upgrades, resulting in an immediate soft-lock.
-*   **The Rule**: **Galaxy 1 (Core Outpost) campaign levels are strictly immune to all Daily Hard difficulty boosts and shield adjustments.** Under no circumstances can a modifier increase target shields or block paths in Galaxy 1. This guarantees that starting levels remain 100% solvable with base equipment, allowing new players to safely complete them and earn their initial credits.
+#### 5.1.1 Daily Hard & Map Capacity Softlock Protection Rules
+To ensure a smooth and forgiving onboarding experience for new recruits, the game strictly isolates inner galaxies from advanced challenge multipliers and hard-mode structures:
+*   **The Risk**: New recruits begin their career with exactly $0$ Credits, $0$ RP, and standard Level 1 lasers. If their introductory levels were subject to Daily Hard boosts, they would face shielded planets requiring Level 2+ lasers, resulting in an immediate soft-lock.
+*   **Galaxy 1 & 2 Immunity**: Galaxies 1 and 2 are strictly immune to all Daily Hard difficulty boosts, shield adjustments, and rollover configurations. Under no circumstances can a Daily Hard sector generate or rollover in Galaxy 1 or 2.
+*   **Dynamic Map Capacity Scaling**: Active solar map missions on starmap orbits are restricted in starting galaxies to keep scanning telemetry clean:
+    - **Galaxy 1 & 2**: Max **2 active Daily Quests** and **3 active Side Quests** are allowed on the orbits simultaneously.
+    - **Galaxy 3+**: Max **3 active Daily Quests** and **7 active Side Quests** are allowed on the orbits simultaneously.
 
-#### 5.1.2 Procedural Generation Direct-Hit Restriction (Galaxy 2+)
-To preserve challenge, spatial complexity, and target puzzle depth across procedurally generated maps:
-*   **The Goal**: Procedural layouts must force strategic usage of reflective and curved slingshot dynamics (mirrors, splitters, gravity wells, portal relays, and explosive cores) and eliminate trivial diagonal cheats.
-*   **The Constraint**: Starting from **Galaxy 2 (Nebular Depths)** and above, **no generated daily sector or daily hard sector is allowed to have an unblocked, straight line-of-sight path from the Death Star to any planet.** 
-*   **The Mechanism**: The generator automatically traces a ray from the Death Star center `(deathStarX + 0.5, deathStarY + 0.5)` to each planet center `(planet.gridX + 0.5, planet.gridY + 0.5)`. If the path is unblocked, it places an indestructible volcanic asteroid along the vector, safe-guarding the integrity of the puzzle without interfering with the intended curved or multi-bent solution.
+#### 5.1.2 Procedural Direct-Hit Calibration (Galaxy-Based Scaling)
+To ease recruits into advanced reflection paths, the ratio of direct, unblocked "easy" missions scales down progressively:
+*   **Galaxy 1 (Training Arc)**: **70% of generated sectors are direct-hit missions**. A deterministic ray-clearing algorithm (`_clearDirectHitPath`) traces the vectors from the emitter to targets and vaporizes all intervening asteroid blockages, teaching base controls.
+*   **Galaxy 2 (Splits Calibration)**: **12% of generated sectors are direct-hit missions**. The majority of levels introduce permanent, non-destructible obsidian screens to force deflections.
+*   **Galaxy 3+ (Advanced Tactical Grid)**: **0% direct-hit missions allowed**. No daily or side quest can have an unblocked line of sight. The generator actively enforces obstructions (`_enforceNoDirectHitForAdvancedGalaxies`) by placing obsidian asteroid shields along the vector line.
 
 #### 5.1.3 Procedural Side Quests Orbital Distribution
-To represent an expansive galactic starmap:
-*   **Orbit Capacity**: Orbit 2 (middle track) hosts exactly **7 active side quests** represented by Assignment beacons.
-*   **Collision Prevention**: Minimum angular separation is reduced from `0.7` to `0.5` radians, ensuring all 7 planets are distributed evenly along the elliptical orbit without overlapping.
-*   **Galaxy-Scaled Rewards**: Rewards scale with galaxy numbers to incentivize deep-space progression:
+To represent an expansive, alive galactic starmap:
+*   **Orbit Capacity**: Refills dynamically up to the galactic capacity limit (**3 active targets in Galaxies 1/2**, and **7 active targets in Galaxies 3+**) represented by Assignment beacons.
+*   **Collision Prevention**: Minimum angular separation is set to `0.5` radians, ensuring all active beacons are distributed evenly along the elliptical orbit without overlapping.
+*   **Deterministic Positioning**: Beacon locations are seeded deterministically using `questId.hashCode`. This guarantees quest positions remain 100% stable and stationary across screen re-entries and test pumps.
+*   **Galaxy-Scaled Rewards**: Credits and RP scale progressively to incentivize deep-space exploration:
     - **Credits**: $150 + \text{GalaxyNum} \times 50 + \text{Random}(100)$
     - **Research Points**: $15 + \text{GalaxyNum} \times 5 + \text{Random}(15)$
 
-#### 5.1.4 Procedural Difficulty Generator (Galaxy-Based Scaling)
+#### 5.1.4 Procedural Difficulty & Planet Shield Scaling
 Daily and procedural side quests dynamically scale their complexity based on the active galaxy number:
-*   **Target Shields**: Target planet defense shields (`requiredLaserPower`) scale linearly: $\text{Shield Power} = \text{GalaxyNum}$ (Galaxy 4 requires Level 4 lasers, Galaxy 6 requires Level 6 lasers), encouraging players to upgrade sub-systems.
+*   **Planet Shielding (Galaxy 3+)**: Target planet defense shields (`requiredLaserPower`) scale linearly: $\text{Shield Power} = \text{GalaxyNum}$ (Galaxy 4 requires Level 4 lasers, Galaxy 6 requires Level 6 lasers).
+*   **Inner Galaxies Shield Erasure (Galaxy 1 & 2)**: All planet targets have their shield CAS completely erased (`requiredLaserPower = null`). Furthermore, all breakable obstacles (Energy Shields, crystals, space scrap, or debris) are converted into non-breakable asteroids to prevent players from getting stuck due to insufficient laser power.
 *   **Obstruction Clutter**: Indestructible asteroid clutter density scale: $2 + \text{GalaxyNum}$ walls.
-*   **Barrier Hardening**: Energy shield barriers increase in shield power: $\max(2, \text{GalaxyNum} - 1)$; scrap metal: $\max(1, \text{GalaxyNum} - 2)$.
+*   **Barrier Hardening (Galaxy 3+)**: Energy shield barriers require $\max(2, \text{GalaxyNum} - 1)$ laser power; scrap metal requires $\max(1, \text{GalaxyNum} - 2)$.
 *   **Puzzle Complexity**: Advanced items like splitters, portals, and gravity wells are dynamically injected in player inventory (Galaxy 4+) requiring multi-step spatial pathing.
 
 ---
@@ -204,6 +209,31 @@ To protect your strategic career and progression:
 *   **Automatic Saves**: All campaign progression stats, unlocked device blueprints, purchased store modules, chassis/device ranks, and completed quest states are saved persistently to the local device.
 *   **Daily Hard Persistence**: Active daily threat levels and completed rollover dates are retained across restarts.
 *   **App Reopening**: Returning players instantly resume their exact position in the galaxy campaign, retaining every single credit and armory upgrade purchased.
+
+---
+
+### 5.5 Dynamic Progressive Tactical Locking & Blueprint Decryption Overlay
+
+To preserve tactical immersion and prevent recruit information overload, all tactical systems are gated behind the decryption of imperial database blueprint packages:
+
+#### 5.5.1 Structural Catalog Hiding (Zero-Clutter catalogs)
+Until a blueprint recipe has been actively decrypted via story progression, its details are entirely hidden from R&D and purchasing channels:
+*   **Tactical Market**: Locked devices (Prism Splitters, Proximity Bombs, Gravity Wells, Warp Portals) are filtered out at the render-level and do not appear in the shop catalog.
+*   **Research Lab**: Locked subsystems (such as the Tactical Aiming Computer or Deflector Chassis capacity upgrades) and device upgrade slots are completely invisible.
+
+#### 5.5.2 Lore Decryption Overlay Breakthroughs
+Completing galactic lore-driven campaign milestones decrypts specific technology blueprints. The game intercepts the mission victory state to project a volumetric tech-overlay:
+*   **Decrypted Spec Sheet**: Renders the item's custom vector wireframe hologram, exact tactical specs, and operational guides.
+*   **Haptic Database Integration**: Tapping the neon-bordered `"INTEGRATE TO DATABASE"` button triggers heavy haptic feedback, triggers the R&D upgrade chime (`audio/upgrade.mp3`), registers the blueprint in the player progression memory persistently, and opens up the locked market offerings and Research Lab cards.
+
+| Decrypted Technology | Unlock Quest Milestone | Concluded Story Arc | Newly Unlocked Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Prism Splitter (180°)** | `q3` (The Kuat Triple-Split) | Galaxy 1 (Core Outpost) | Bifurcating laser beams, Deflector Chassis upgrades |
+| **Prism Splitter Angles** | `q5` (End-of-G2 Lore) | Galaxy 2 (Nebular Depths) | Diagonals (45°, 90°, 135°), Tactical Aiming Computer |
+| **Anti-Matter Proximity Bomb** | `q6` (Galaxy 3 Lore) | Galaxy 3 | Shattering heavy armored planet shield casings |
+| **Singularity Gravity Well** | `q7` (Galaxy 4 Lore) | Galaxy 4 | Gravitational ray-bending around obsidian blockades |
+| **Cosmic Warp Portals** | `q8` (Galaxy 5 Lore) | Galaxy 5 | Teleporting beams across space without attenuation |
+| **Floating Deflection Asteroids** | `q9` (Galaxy 6 Lore) | Galaxy 6 | Harnessing preset organic rock refractors in deep space |
 
 ---
 
