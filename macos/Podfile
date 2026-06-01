@@ -3,6 +3,9 @@ platform :osx, '10.15'
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
+# Silence compiler warnings from third-party libraries (e.g. Swift closures in audioplayers)
+inhibit_all_warnings!
+
 project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
