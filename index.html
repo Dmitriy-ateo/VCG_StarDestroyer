@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/VCG_StarDestroyer/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Star Destroyer: Single Shot — A premium tactical spatial puzzle game. Upgrade your laser intensity, aims, and chassis capacity to calibrate beams, bypass defense matrices, and vaporize targeted planets!">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Star Destroyer">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Star Destroyer: Single Shot</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // Client Context Detection
+    (function() {
+      const isMobile = window.innerWidth <= 480 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isInsideIframe = window.self !== window.top || window.location.search.includes('iframe=true');
+
+      if (!isMobile && !isInsideIframe) {
+        document.documentElement.classList.add('desktop-host');
+        // Set the iframe src dynamically when the DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+          const iframe = document.getElementById('game-iframe');
+          if (iframe) {
+            // Append iframe parameter to let the child know it runs inside the cabinet
+            iframe.src = window.location.pathname + '?iframe=true' + window.location.hash;
+          }
+        });
+      } else {
+        document.documentElement.classList.add('game-host');
+      }
+    })();
+  </script>
+
+  <style>
+    /* ------------------ COMMON STYLES ------------------ */
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+
+    /* ------------------ DESKTOP WRAPPER (HOST) STYLES ------------------ */
+    #desktop-wrapper {
+      display: none;
+    }
+
+    .desktop-host body {
+      background-color: #05050A;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* Glowing background stars for the desktop browser backdrop */
+      background-image: 
+        radial-gradient(1px 1px at 40px 80px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 120px 240px, rgba(255, 255, 255, 0.8), rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 300px 180px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 450px 320px, rgba(0, 255, 245, 0.3), rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 600px 140px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 780px 290px, rgba(255, 46, 147, 0.2), rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 900px 420px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 1100px 220px, #fff, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 600px 600px;
+      animation: backdrop-drift 120s linear infinite;
+    }
+
+    @keyframes backdrop-drift {
+      from { background-position: 0 0; }
+      to { background-position: 600px 600px; }
+    }
+
+    .desktop-host #desktop-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .desktop-host #game-container {
+      display: none !important;
+    }
+
+    .game-cabinet {
+      width: 450px;
+      height: 880px;
+      max-height: 92vh;
+      border-radius: 20px;
+      border: 2px solid rgba(0, 255, 245, 0.4);
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.9), 
+                  0 0 35px rgba(0, 255, 245, 0.25);
+      overflow: hidden;
+      background-color: #080710;
+      position: relative;
+    }
+
+    .game-cabinet iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      overflow: hidden;
+      display: block;
+    }
+
+    /* ------------------ GAME CLIENT STYLES (INSIDE IFRAME/MOBILE) ------------------ */
+    #game-container {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .game-host body {
+      background-color: #080710;
+    }
+
+    .game-host #game-container {
+      display: block;
+    }
+
+    #loading-container, flutter-view {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      border: none !important;
+      border-radius: 0px !important;
+      box-shadow: none !important;
+      box-sizing: border-box;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #loading-container {
+      background-color: #080710;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .loader-content {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .game-title {
+      color: #00FFF5;
+      font-size: 2.2rem;
+      letter-spacing: 0.4rem;
+      margin-bottom: 2.5rem;
+      font-weight: 900;
+      text-shadow: 0 0 10px rgba(0, 255, 245, 0.8), 0 0 20px rgba(0, 255, 245, 0.4);
+      animation: title-flicker 3s infinite alternate;
+    }
+
+    .laser-emitter {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin-bottom: 2.5rem;
+    }
+
+    .laser-core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 16px;
+      background-color: #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 0 15px #FFFFFF, 0 0 30px #FF2E93, 0 0 45px #FF2E93;
+      animation: pulse-core 1.5s infinite ease-in-out alternate;
+    }
+
+    .laser-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 2px solid transparent;
+      border-top-color: #00FFF5;
+      border-bottom-color: #00FFF5;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0, 255, 245, 0.3);
+      animation: spin-ring 2s linear infinite;
+    }
+
+    .loading-status {
+      color: #FF2E93;
+      font-size: 0.9rem;
+      letter-spacing: 0.15rem;
+      text-shadow: 0 0 8px rgba(255, 46, 147, 0.6);
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    .status-text {
+      animation: pulse-text 1.5s infinite alternate;
+    }
+
+    .dots::after {
+      content: '';
+      animation: loading-dots 1.5s infinite;
+    }
+
+    /* Animations */
+    @keyframes spin-ring {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-core {
+      0% {
+        transform: translate(-50%, -50%) scale(0.85);
+        box-shadow: 0 0 10px #FFFFFF, 0 0 20px #FF2E93, 0 0 30px #FF2E93;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.15);
+        box-shadow: 0 0 20px #FFFFFF, 0 0 35px #FF2E93, 0 0 55px #FF2E93;
+      }
+    }
+
+    @keyframes pulse-text {
+      0% { opacity: 0.6; }
+      100% { opacity: 1.0; }
+    }
+
+    @keyframes loading-dots {
+      0% { content: ''; }
+      33% { content: '.'; }
+      66% { content: '..'; }
+      100% { content: '...'; }
+    }
+
+    @keyframes title-flicker {
+      0%, 100% { opacity: 0.95; }
+      45% { opacity: 0.95; }
+      46% { opacity: 0.3; }
+      47% { opacity: 0.95; }
+      48% { opacity: 0.95; }
+      78% { opacity: 0.95; }
+      79% { opacity: 0.3; }
+      80% { opacity: 0.95; }
+    }
+
+    /* Starfield details */
+    .space-stars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 50px 160px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 80px 120px, rgba(0, 255, 245, 0.4), rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 110px 210px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 150px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 220px 80px, rgba(255, 46, 147, 0.3), rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 240px 150px, #fff, rgba(0,0,0,0));
+      background-repeat: repeat;
+      background-size: 300px 300px;
+      opacity: 0.25;
+      animation: drift 60s linear infinite;
+    }
+
+    @keyframes drift {
+      from { background-position: 0 0; }
+      to { background-position: 300px 600px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Desktop Bezel Wrapper (Only visible on desktop at top-level) -->
+  <div id="desktop-wrapper">
+    <div class="game-cabinet">
+      <iframe id="game-iframe"></iframe>
+    </div>
+  </div>
+
+  <!-- Game Container (Visible inside iframe or on native mobile screen) -->
+  <div id="game-container">
+    <div id="loading-container">
+      <div class="space-stars"></div>
+      <div class="loader-content">
+        <h1 class="game-title">STAR DESTROYER</h1>
+        <div class="laser-emitter">
+          <div class="laser-core"></div>
+          <div class="laser-ring"></div>
+        </div>
+        <div class="loading-status">
+          <span class="status-text">CALIBRATING TACTICAL SYSTEMS</span>
+          <span class="dots"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // MutationObserver to detect when Flutter mounts the canvas or view
+    (function() {
+      // Execute loader hide checks only in game-host context
+      if (!document.documentElement.classList.contains('game-host')) return;
+
+      const initialCheck = document.querySelector('flutter-view, canvas');
+      if (initialCheck) {
+        const loader = document.getElementById('loading-container');
+        if (loader) loader.remove();
+        return;
+      }
+
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (node.tagName === 'FLUTTER-VIEW' || node.tagName === 'CANVAS' || node.id === 'flutter_container') {
+              const loader = document.getElementById('loading-container');
+              if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                  loader.remove();
+                }, 600);
+                observer.disconnect();
+                return;
+              }
+            }
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+
+  <!-- Dynamic Bootloader Script -->
+  <script>
+    (function() {
+      // Boot Flutter engine ONLY in a game context
+      if (document.documentElement.classList.contains('game-host')) {
+        const script = document.createElement('script');
+        script.src = 'flutter_bootstrap.js';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    })();
+  </script>
+</body>
+</html>

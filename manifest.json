@@ -1,0 +1,35 @@
+{
+    "name": "Star Destroyer: Single Shot",
+    "short_name": "Star Destroyer",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#080710",
+    "theme_color": "#00FFF5",
+    "description": "A premium tactical cybernetic spatial puzzle game. Guide the superlaser, reflect beams, and trigger chain reactions to vaporize targeted sectors!",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
