@@ -6,6 +6,8 @@ This guide establishes the rules of engagement, game mechanics, component parame
 > **MANDATORY RULES FOR DEVELOPERS & DESIGNERS**:
 > 1. **Solvability Check**: When adding a new Sector (Level) to the database, you **MUST** ensure and verify that the level is mathematically and logically solvable using the provided inventory blueprints and constraints. Obstructing a required placement coordinate with a static wall or planet is strictly prohibited.
 > 2. **Documentation Synchronization (The Rule for New Game Changes)**: When introducing or modifying any new game mechanic, item, galaxy, chassis upgrade, or interface hotspot, you **MUST** immediately update this Guide (`GAME_GUIDE.md`) to document the rules, mechanics, physics, and design specifications of the new item/change. Keeping this guide perfectly synchronized with codebase changes is a strict requirement.
+> 3. **Automated Test Verification**: Before concluding any task, you **MUST** run the automated test suite (`flutter test`) to verify that all unit and integration tests are 100% green, and confirm that the project compiles cleanly under production builds.
+> 4. **Immediate Git Commits**: Once verification passes and all guides/walkthroughs are fully updated and synchronized, you **MUST** immediately stage and commit all modified files to the Git repository with a clear, professional commit message.
 
 ---
 
